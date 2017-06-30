@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mytoken Contract</title>
+</head>
+<body class="container">
+<div>
+	<span>Create Account: </span><input type="text" placeholder="passphrase" id="new_passphrase"> <button id="new">Generate Account</button>
+	<hr>
+	<span>Enter Token Contract: </span><input id="tokencontractaddress" style="width: 400px;" type="text" value="" /> <button type="button" id="btnloadtoken">Load Token Contract</button><br>
+	<span>Name: </span> <span class="tokenname"></span><br>
+	<span>Address: </span> <span id="tokenaddress"></span><br><br>
+	<hr>
+	<span>Transfer Token: </span> <input id="tokenvalue" style="width: 50px;" type="text" value="1" /> from: <select id="accounts"></select> to: <input id="to" style="width:400px" type="text" value="" /> <button type="button" id="btnsendtoken">Send</button><br><br>
+	<span>Wallet Address: </span> <input id="to2" style="width:400px" type="text" value="" /> <button type="button" id="btnbalanceof">Show Token Balance</button> <span id="balanceof"></span>
+</div>
+<hr>
+<h3 id="tokenname2">Methods</h3>
+<ul id="func"></ul>
+<script src="https://cdn.rawgit.com/ethereum/web3.js/develop/dist/web3.js"></script>
+<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js"></script>
+<script type="text/javascript">
+    var address;
+	var myTokenContract;
+	var Web3 = require('web3');	
+	var web3 = new Web3();
+	
+	web3.setProvider(new web3.providers.HttpProvider("http://localhost:8545"));
+	var abi = [{"constant":false,"inputs":[{"name":"newSellPrice","type":"uint256"},{"name":"newBuyPrice","type":"uint256"}],"name":"setPrices","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"sellPrice","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"standard","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"target","type":"address"},{"name":"mintedAmount","type":"uint256"}],"name":"mintToken","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"buyPrice","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":false,"inputs":[],"name":"buy","outputs":[],"payable":true,"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"frozenAccount","outputs":[{"name":"","type":"bool"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"},{"name":"_extraData","type":"bytes"}],"name":"approveAndCall","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"amount","type":"uint256"}],"name":"sell","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"target","type":"address"},{"name":"freeze","type":"bool"}],"name":"freezeAccount","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"type":"function"},{"inputs":[{"name":"initialSupply","type":"uint256"},{"name":"tokenName","type":"string"},{"name":"decimalUnits","type":"uint8"},{"name":"tokenSymbol","type":"string"}],"payable":false,"type":"constructor"},{"payable":false,"type":"fallback"},{"anonymous":false,"inputs":[{"indexed":false,"name":"target","type":"address"},{"indexed":false,"name":"frozen","type":"bool"}],"name":"FrozenFunds","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}];
+
+	$(document).ready(function() {
+		loadContract();
+		
+		loadAccounts();
+		
+		$('#btnloadtoken').click(function(){
+			loadContract();
+		});
+		
+		$('#btnsendtoken').click(function(){
+			var accnt1 = $('#accounts').val();
+			var to = $('#to').val();
+			var tokenvalue = $('#tokenvalue').val();
+			var passpharase = prompt('Enter passphrase: ');
+			if(accnt1!='' && to != '' && tokenvalue!= '' && !isNaN(tokenvalue) && passpharase!='' ){
+				try{
+					web3.eth.defaultAccount = accnt1;
+					var unlock = web3.personal.unlockAccount(accnt1,passpharase);					
+					console.log(txHash);
+				} catch (err) {
+					alert("authentication invalid");
+				}
+				
+				var txHash = myTokenContract.transfer(to,tokenvalue);
+				alert(txHash);
+				console.log(txHash);
+				loadAccounts();
+			}else{
+				alert('Error');
+			}
+		});
+		
+		$("#new").click(function(){
+			web3.personal.newAccount($("new_passphrase").value, function(e, res){
+				loadAccounts();
+			});
+		}); 
+		
+		$('#btnbalanceof').click(function(){
+			var addr = $('#to2').val();
+			if(addr!=""){
+				var balance = myTokenContract.balanceOf($('#to2').val());
+				$('#balanceof').html(balance.c[0]);
+			}
+		});
+	});
+	
+	function loadContract()
+	{
+		address = $('#tokencontractaddress').val();
+		myTokenContract = web3.eth.contract(abi).at(address);		
+		myTokenContract.name(function(err, result){
+			$('.tokenname').html(result);
+			$('#tokenname2').html(result+' Methods');
+		})
+		
+		$('#tokenaddress').html(myTokenContract.address);
+		
+		var ul = document.getElementById("func");
+		$('#func').html('');
+		for (var key in myTokenContract) {
+		   if (myTokenContract.hasOwnProperty(key)) {
+			  var obj = myTokenContract[key];
+			  for (var prop in obj) {
+				 if (obj.hasOwnProperty(prop)) {
+					//alert(prop + " = " + obj[prop]);
+					var li = document.createElement("li");
+					li.appendChild(document.createTextNode(prop));
+					ul.appendChild(li);
+				 }
+			  }
+		   }
+		}
+	}
+	
+	function loadAccounts()
+	{
+		var accounts = web3.eth.accounts;
+		$('#accounts').html('');
+		for(var x=0;x<accounts.length;x++){
+			var balance = web3.fromWei(web3.eth.getBalance(accounts[x]), 'ether').toNumber();
+			$('#accounts').append('<option value="'+accounts[x]+'">'+accounts[x]+': eth('+balance+')'+'</option>');
+		}
+	}
+</script>
+</body>
+</html>
