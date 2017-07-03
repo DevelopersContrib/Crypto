@@ -9,7 +9,8 @@
 	<hr>
 	<span>Enter Token Contract: </span><input id="tokencontractaddress" style="width: 400px;" type="text" value="" /> <button type="button" id="btnloadtoken">Load Token Contract</button><br>
 	<span>Name: </span> <span class="tokenname"></span><br>
-	<span>Address: </span> <span id="tokenaddress"></span><br><br>
+	<span>Address: </span> <span id="tokenaddress"></span><br>
+	<span>Balance: </span> <span id="tokenbalance"></span><br><br>
 	<hr>
 	<span>Transfer Token: </span> <input id="tokenvalue" style="width: 50px;" type="text" value="1" /> from: <select id="accounts"></select> to: <input id="to" style="width:400px" type="text" value="" /> <button type="button" id="btnsendtoken">Send</button><br><br>
 	<span>Wallet Address: </span> <input id="to2" style="width:400px" type="text" value="" /> <button type="button" id="btnbalanceof">Show Token Balance</button> <span id="balanceof"></span>
@@ -62,6 +63,8 @@
 		
 		$("#new").click(function(){
 			web3.personal.newAccount($("new_passphrase").value, function(e, res){
+				alert(result);
+				console.log(result);
 				loadAccounts();
 			});
 		}); 
@@ -82,7 +85,13 @@
 		myTokenContract.name(function(err, result){
 			$('.tokenname').html(result);
 			$('#tokenname2').html(result+' Methods');
+			
+			var accnt1 = $('#accounts').val();
+			var balance = myTokenContract.balanceOf(accnt1);
+			$('#tokenbalance').html(balance.c[0]);
 		})
+		
+		
 		
 		$('#tokenaddress').html(myTokenContract.address);
 		
