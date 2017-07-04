@@ -10,13 +10,18 @@
 	<span>Enter Token Contract: </span><input id="tokencontractaddress" style="width: 400px;" type="text" value="" /> <button type="button" id="btnloadtoken">Load Token Contract</button><br>
 	<span>Name: </span> <span class="tokenname"></span><br>
 	<span>Address: </span> <span id="tokenaddress"></span><br>
+	<span>Mint Token: </span> <input id="tokenmint" type="text" value="" /> <button type="button" id="btntokenmint">Update</button><br>
 	<span>Balance: </span> <span id="tokenbalance"></span><br>
+	
 	<span>Sell Price: </span> <input id="sellprice" style="width:100px" type="text"/>
 	<span>Buy Price: </span> <input id="buyprice" style="width:100px" type="text" /> <button type="button" id="btnupdateprices">Update</button><br>
 	<hr>
-	<span>Transfer Token: </span> <input id="tokenvalue" style="width: 50px;" type="text" value="1" /> from: <select id="accounts"></select> to: <input id="to" style="width:400px" type="text" value="" /> <button type="button" id="btnsendtoken">Send</button><br><br>
+	<span>Transfer Token: </span> <input id="tokenvalue" style="width: 50px;" type="text" value="1" /> from: <select id="accounts"></select> to: <input id="to" style="width:400px" type="text" value="" /> <button type="button" id="btnsendtoken">Send</button><br>
 	<pre id="transaction"></pre>
-	<span>Wallet Address: </span> <input id="to2" style="width:400px" type="text" value="" /> <button type="button" id="btnbalanceof">Show Token Balance</button> <span id="balanceof"></span>
+	<hr>
+	<span>Wallet Address: </span> <input id="to2" style="width:400px" type="text" value="" /> <button type="button" id="btnbalanceof">Show Token Balance</button> <span id="balanceof"></span><hr>
+	
+	<span>Sell Token from: </span> <input id="selltokenfrom" style="width:400px" type="text" value="" /> Token: <input id="selltoken" style="width:100px" type="text" value="1" /> <button type="button" id="btnsell">Sell</button>
 </div>
 <hr>
 <h3 id="tokenname2">Methods</h3>
@@ -31,12 +36,32 @@
 	
 	web3.setProvider(new web3.providers.HttpProvider("http://localhost:8545"));
 	var abi = [{"constant":false,"inputs":[{"name":"newSellPrice","type":"uint256"},{"name":"newBuyPrice","type":"uint256"}],"name":"setPrices","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"sellPrice","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"standard","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"target","type":"address"},{"name":"mintedAmount","type":"uint256"}],"name":"mintToken","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"buyPrice","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":false,"inputs":[],"name":"buy","outputs":[],"payable":true,"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"frozenAccount","outputs":[{"name":"","type":"bool"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"},{"name":"_extraData","type":"bytes"}],"name":"approveAndCall","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"amount","type":"uint256"}],"name":"sell","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"target","type":"address"},{"name":"freeze","type":"bool"}],"name":"freezeAccount","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"type":"function"},{"inputs":[{"name":"initialSupply","type":"uint256"},{"name":"tokenName","type":"string"},{"name":"decimalUnits","type":"uint8"},{"name":"tokenSymbol","type":"string"}],"payable":false,"type":"constructor"},{"payable":false,"type":"fallback"},{"anonymous":false,"inputs":[{"indexed":false,"name":"target","type":"address"},{"indexed":false,"name":"frozen","type":"bool"}],"name":"FrozenFunds","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}];
-
+	
 	$(document).ready(function() {
+		/*var accounts = web3.eth.accounts;
+		$('#accounts').html('');
+		for(var x=0;x<accounts.length;x++){
+			try{
+				var unlock = web3.personal.unlockAccount(accounts[x],'ronan1234');
+				console.log(accounts[x]+': '+unlock);
+			}catch(err){
+				console.log(accounts[x]+': false');
+			}
+		}		
+		return;*/
+		
 		console.log('ready');
 		loadContract();
 		
 		loadAccounts();
+		
+		$('#btnsell').click(function(){
+			sell();
+		});
+		
+		$('#btntokenmint').click(function(){
+			mint();
+		});
 		
 		$('#btnupdateprices').click(function(){
 			updatePrices();
@@ -71,7 +96,7 @@
 		});
 		
 		$("#new").click(function(){
-			web3.personal.newAccount($("new_passphrase").value, function(e, res){
+			web3.personal.newAccount($("new_passphrase").val(), function(e, res){
 				alert(res);
 				console.log(res);
 				loadAccounts();
@@ -86,8 +111,51 @@
 			}
 		});
 		
-		getTransactionsByAccount($('#accounts').val());
+		//getTransactionsByAccount($('#accounts').val());
 	});
+	
+	function sell()
+	{
+		var token = $('#selltoken').val();
+		var accnt2 = $('#selltokenfrom').val();
+		var passpharase = prompt('Enter passphrase: ');
+		if(accnt2!='' && passpharase!='' ){
+			try{
+				web3.eth.defaultAccount = accnt2;
+				var unlock = web3.personal.unlockAccount(accnt2,passpharase);
+				console.log(unlock);
+
+				//var tx = myTokenContract.sell(parseInt(token));
+				var tx = myTokenContract.sell(1);
+				console.log(tx);
+				getTokenBalance();
+				printTransaction(tx);
+			} catch (err) {
+				alert(err);
+			}
+		}
+	}
+	
+	function mint()
+	{
+		var mint = $('#tokenmint').val();
+		var accnt1 = $('#accounts').val();
+		var passpharase = prompt('Enter passphrase: ');
+		if(accnt1!='' && passpharase!='' ){
+			try{
+				web3.eth.defaultAccount = accnt1;
+				var unlock = web3.personal.unlockAccount(accnt1,passpharase);
+				console.log(unlock);
+
+				var tx = myTokenContract.mintToken(accnt1, parseInt(mint));
+				console.log(tx);
+				getTokenBalance();
+				printTransaction(tx);
+			} catch (err) {
+				alert(err);
+			}
+		}
+	}
 	
 	function updatePrices()
 	{
@@ -101,11 +169,19 @@
 				var unlock = web3.personal.unlockAccount(accnt1,passpharase);
 				console.log(unlock);
 				var v = myTokenContract.setPrices(parseInt(sellprice),parseInt(buyprice));
-				console(v);
+				console.log(v);
 			} catch (err) {
-				alert("authentication invalid");
+				alert(err);
 			}
 		}
+	}
+	
+	
+	function getTokenBalance()
+	{
+		var accnt1 = $('#accounts').val();
+		var balance = myTokenContract.balanceOf(accnt1);
+		$('#tokenbalance').html(balance.c[0]);
 	}
 	
 	function loadContract()
@@ -116,9 +192,7 @@
 			$('.tokenname').html(result);
 			$('#tokenname2').html(result+' Methods');
 			
-			var accnt1 = $('#accounts').val();
-			var balance = myTokenContract.balanceOf(accnt1);
-			$('#tokenbalance').html(balance.c[0]);
+			getTokenBalance();
 		})
 		
 		myTokenContract.sellPrice(function(err, result){
@@ -208,7 +282,7 @@
 		var block = web3.eth.getBlock(i, true);
 		//console.log(block != null && block.transactions != null);
 		if (block != null && block.transactions != null) {
-		//debugger;
+
 		  block.transactions.forEach( function(e) {
 			if (myaccount == "*" || myaccount == e.from || myaccount == e.to) {
 			  console.log("  tx hash          : " + e.hash + "\n"
