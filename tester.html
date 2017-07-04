@@ -10,9 +10,12 @@
 	<span>Enter Token Contract: </span><input id="tokencontractaddress" style="width: 400px;" type="text" value="" /> <button type="button" id="btnloadtoken">Load Token Contract</button><br>
 	<span>Name: </span> <span class="tokenname"></span><br>
 	<span>Address: </span> <span id="tokenaddress"></span><br>
-	<span>Balance: </span> <span id="tokenbalance"></span><br><br>
+	<span>Balance: </span> <span id="tokenbalance"></span><br>
+	<span>Sell Price: </span> <input id="sellprice" style="width:100px" type="text"/>
+	<span>Buy Price: </span> <input id="buyprice" style="width:100px" type="text" /> <button type="button" id="btnupdateprices">Update</button><br>
 	<hr>
 	<span>Transfer Token: </span> <input id="tokenvalue" style="width: 50px;" type="text" value="1" /> from: <select id="accounts"></select> to: <input id="to" style="width:400px" type="text" value="" /> <button type="button" id="btnsendtoken">Send</button><br><br>
+	<pre id="transaction"></pre>
 	<span>Wallet Address: </span> <input id="to2" style="width:400px" type="text" value="" /> <button type="button" id="btnbalanceof">Show Token Balance</button> <span id="balanceof"></span>
 </div>
 <hr>
@@ -30,9 +33,14 @@
 	var abi = [{"constant":false,"inputs":[{"name":"newSellPrice","type":"uint256"},{"name":"newBuyPrice","type":"uint256"}],"name":"setPrices","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"sellPrice","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"standard","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"target","type":"address"},{"name":"mintedAmount","type":"uint256"}],"name":"mintToken","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"buyPrice","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":false,"inputs":[],"name":"buy","outputs":[],"payable":true,"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"frozenAccount","outputs":[{"name":"","type":"bool"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"},{"name":"_extraData","type":"bytes"}],"name":"approveAndCall","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"amount","type":"uint256"}],"name":"sell","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"target","type":"address"},{"name":"freeze","type":"bool"}],"name":"freezeAccount","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"type":"function"},{"inputs":[{"name":"initialSupply","type":"uint256"},{"name":"tokenName","type":"string"},{"name":"decimalUnits","type":"uint8"},{"name":"tokenSymbol","type":"string"}],"payable":false,"type":"constructor"},{"payable":false,"type":"fallback"},{"anonymous":false,"inputs":[{"indexed":false,"name":"target","type":"address"},{"indexed":false,"name":"frozen","type":"bool"}],"name":"FrozenFunds","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}];
 
 	$(document).ready(function() {
+		console.log('ready');
 		loadContract();
 		
 		loadAccounts();
+		
+		$('#btnupdateprices').click(function(){
+			updatePrices();
+		});
 		
 		$('#btnloadtoken').click(function(){
 			loadContract();
@@ -46,7 +54,7 @@
 			if(accnt1!='' && to != '' && tokenvalue!= '' && !isNaN(tokenvalue) && passpharase!='' ){
 				try{
 					web3.eth.defaultAccount = accnt1;
-					var unlock = web3.personal.unlockAccount(accnt1,passpharase);					
+					var unlock = web3.personal.unlockAccount(accnt1,passpharase);
 					console.log(txHash);
 				} catch (err) {
 					alert("authentication invalid");
@@ -55,6 +63,7 @@
 				var txHash = myTokenContract.transfer(to,tokenvalue);
 				alert(txHash);
 				console.log(txHash);
+				printTransaction(txHash);
 				loadAccounts();
 			}else{
 				alert('Error');
@@ -63,8 +72,8 @@
 		
 		$("#new").click(function(){
 			web3.personal.newAccount($("new_passphrase").value, function(e, res){
-				alert(result);
-				console.log(result);
+				alert(res);
+				console.log(res);
 				loadAccounts();
 			});
 		}); 
@@ -76,7 +85,28 @@
 				$('#balanceof').html(balance.c[0]);
 			}
 		});
+		
+		getTransactionsByAccount($('#accounts').val());
 	});
+	
+	function updatePrices()
+	{
+		var sellprice = $('#sellprice').val();
+		var buyprice = $('#buyprice').val();
+		var accnt1 = $('#accounts').val();
+		var passpharase = prompt('Enter passphrase: ');
+		if(accnt1!='' && passpharase!='' ){
+			try{
+				web3.eth.defaultAccount = accnt1;
+				var unlock = web3.personal.unlockAccount(accnt1,passpharase);
+				console.log(unlock);
+				var v = myTokenContract.setPrices(parseInt(sellprice),parseInt(buyprice));
+				console(v);
+			} catch (err) {
+				alert("authentication invalid");
+			}
+		}
+	}
 	
 	function loadContract()
 	{
@@ -91,7 +121,13 @@
 			$('#tokenbalance').html(balance.c[0]);
 		})
 		
+		myTokenContract.sellPrice(function(err, result){
+			$('#sellprice').val(result.c[0]);
+		});
 		
+		myTokenContract.buyPrice(function(err, result){
+			$('#buyprice').val(result.c[0]);
+		});
 		
 		$('#tokenaddress').html(myTokenContract.address);
 		
@@ -120,6 +156,77 @@
 			var balance = web3.fromWei(web3.eth.getBalance(accounts[x]), 'ether').toNumber();
 			$('#accounts').append('<option value="'+accounts[x]+'">'+accounts[x]+': eth('+balance+')'+'</option>');
 		}
+	}
+	
+	function printTransaction(txHash) {
+	  var tx = web3.eth.getTransaction(txHash);
+	  if (tx != null) {
+		console.log("  tx hash          : " + tx.hash + "\n"
+		  + "   nonce           : " + tx.nonce + "\n"
+		  + "   blockHash       : " + tx.blockHash + "\n"
+		  + "   blockNumber     : " + tx.blockNumber + "\n"
+		  + "   transactionIndex: " + tx.transactionIndex + "\n"
+		  + "   from            : " + tx.from + "\n" 
+		  + "   to              : " + tx.to + "\n"
+		  + "   value           : " + tx.value + "\n"
+		  + "   gasPrice        : " + tx.gasPrice + "\n"
+		  + "   gas             : " + tx.gas + "\n"
+		  + "   input           : " + tx.input);
+		  		  
+		  $('#transaction').html(
+				"  tx hash          : " + tx.hash + "<br>"
+				+ "   nonce           : " + tx.nonce + "<br>"
+				+ "   blockHash       : " + tx.blockHash + "<br>"
+				+ "   blockNumber     : " + tx.blockNumber + "<br>"
+				+ "   transactionIndex: " + tx.transactionIndex + "<br>"
+				+ "   from            : " + tx.from + "<br>" 
+				+ "   to              : " + tx.to + "<br>"
+				+ "   value           : " + tx.value + "<br>"
+				+ "   gasPrice        : " + tx.gasPrice + "<br>"
+				+ "   gas             : " + tx.gas + "<br>"
+				+ "   input           : " + tx.input
+		  );
+	  }
+	}
+	
+	
+	function getTransactionsByAccount(myaccount, startBlockNumber, endBlockNumber) {
+	  if (endBlockNumber == null) {
+		endBlockNumber = web3.eth.blockNumber;
+		console.log("Using endBlockNumber: " + endBlockNumber);
+	  }
+	  if (startBlockNumber == null) {
+		startBlockNumber = endBlockNumber - 1000;
+		console.log("Using startBlockNumber: " + startBlockNumber);
+	  }
+	  console.log("Searching for transactions to/from account \"" + myaccount + "\" within blocks "  + startBlockNumber + " and " + endBlockNumber);
+
+	  for (var i = startBlockNumber; i <= endBlockNumber; i++) {
+		if (i % 1000 == 0) {
+		  console.log("Searching block " + i);
+		}
+		var block = web3.eth.getBlock(i, true);
+		//console.log(block != null && block.transactions != null);
+		if (block != null && block.transactions != null) {
+		//debugger;
+		  block.transactions.forEach( function(e) {
+			if (myaccount == "*" || myaccount == e.from || myaccount == e.to) {
+			  console.log("  tx hash          : " + e.hash + "\n"
+				+ "   nonce           : " + e.nonce + "\n"
+				+ "   blockHash       : " + e.blockHash + "\n"
+				+ "   blockNumber     : " + e.blockNumber + "\n"
+				+ "   transactionIndex: " + e.transactionIndex + "\n"
+				+ "   from            : " + e.from + "\n" 
+				+ "   to              : " + e.to + "\n"
+				+ "   value           : " + e.value + "\n"
+				+ "   time            : " + block.timestamp + " " + new Date(block.timestamp * 1000).toGMTString() + "\n"
+				+ "   gasPrice        : " + e.gasPrice + "\n"
+				+ "   gas             : " + e.gas + "\n"
+				+ "   input           : " + e.input);
+			}
+		  })
+		}
+	  }
 	}
 </script>
 </body>
