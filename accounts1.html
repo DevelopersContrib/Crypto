@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DApp</title>
+</head>
+<body class="container">
+
+</body>
+	<h2>Create Account</h2>
+	<input type="text" placeholder="passphrase" id="new_passphrase"> 
+	
+	<button id="new">Generate Account</button>
+	<br>
+	<pre id="new_result"></pre>
+  <hr>
+  <h3>Accounts<h3>
+  <ol id="accnts"></ol>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script type="text/javascript">
+	function loadAccounts(){
+		$.get('http://localhost:8081/getAccounts',function(data){
+			var accounts = jQuery.parseJSON(data);
+			var ul = document.getElementById("accnts");
+			ul.innerHTML = '';
+			for(var x=0;x<accounts.length;x++){
+				var li = document.createElement("li");
+				li.appendChild(document.createTextNode(accounts[x]));
+				ul.appendChild(li);
+			}
+		});
+	}
+	
+	$(document).ready(function() {
+		loadAccounts();
+		$("#new").click(function(){
+			if($("#new_passphrase").val()!=''){
+				$.get('http://localhost:8081/createAccount?passphrase='+$("#new_passphrase").val(),function(data){
+        	var address = jQuery.parseJSON(data);
+			    alert(address.address);
+				});
+			}
+		}); 
+	});
+</script>
+</html>
