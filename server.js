@@ -34,7 +34,7 @@ app.get('/createAccount', function (req, res) {
 	//res.end(JSON.stringify({passphrase:query.passphrase}));
 	
 	if(query.passphrase!=''){
-		web3.personal.newAccount("password",function(error,result){
+		web3.personal.newAccount(query.passphrase,function(error,result){
       if(!error){
           console.log(result);
           res.end(JSON.stringify({address:result}));
