@@ -35,7 +35,7 @@ app.post('/transfer', function(req, res) {
 	var tokenvalue = req.body.tokenvalue;
 	var addressto = req.body.addressto;
 
-	if(addressto != '' && tokenvalue!= '' && !isNaN(tokenvalue) && passphrase!='' && account!='' && tokenaddress!=''){
+	if(addressto != '' && tokenvalue!= '' && !isNaN(tokenvalue) && passphrase!='' && account!='' && contractAddress!=''){
 		try{
 			web3.eth.defaultAccount = account;
 			var unlock = web3.personal.unlockAccount(account,passphrase);
@@ -51,6 +51,8 @@ app.post('/transfer', function(req, res) {
 		res.end(JSON.stringify({error:'Missing fields'}));
 	}
 });
+
+
 
 app.get('/getAccounts', function (req, res) {
 	var accounts = web3.eth.accounts;
