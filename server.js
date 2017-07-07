@@ -4,9 +4,13 @@ var Web3 = require('web3');
 var web3 = new Web3();
 var url = require('url');
 
+var abi = [{"constant":false,"inputs":[{"name":"newSellPrice","type":"uint256"},{"name":"newBuyPrice","type":"uint256"}],"name":"setPrices","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"sellPrice","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"standard","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"target","type":"address"},{"name":"mintedAmount","type":"uint256"}],"name":"mintToken","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"buyPrice","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"type":"function"},{"constant":false,"inputs":[],"name":"buy","outputs":[],"payable":true,"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"frozenAccount","outputs":[{"name":"","type":"bool"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"},{"name":"_extraData","type":"bytes"}],"name":"approveAndCall","outputs":[{"name":"success","type":"bool"}],"payable":false,"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"amount","type":"uint256"}],"name":"sell","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"target","type":"address"},{"name":"freeze","type":"bool"}],"name":"freezeAccount","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"type":"function"},{"inputs":[{"name":"initialSupply","type":"uint256"},{"name":"tokenName","type":"string"},{"name":"decimalUnits","type":"uint8"},{"name":"tokenSymbol","type":"string"}],"payable":false,"type":"constructor"},{"payable":false,"type":"fallback"},{"anonymous":false,"inputs":[{"indexed":false,"name":"target","type":"address"},{"indexed":false,"name":"frozen","type":"bool"}],"name":"FrozenFunds","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}];
+
+var bodyParser = require('body-parser');
+app.use(bodyParser.json()); // support json encoded bodies
+app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
+
 web3.setProvider(new web3.providers.HttpProvider("http://localhost:8545"));
-//web3.setProvider(new web3.providers.HttpProvider("http://52.25.91.1:8545/"));
-//web3 = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/MezSkDvkG0jHFFkL6rYZ "));
 
 var allowCrossDomain = function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');
@@ -23,6 +27,31 @@ var allowCrossDomain = function(req, res, next) {
 };
 app.use(allowCrossDomain);
 
+app.post('/transfer', function(req, res) {
+    var contractAddress = req.body.tokenaddress;
+	var account = req.body.account;
+	var passphrase = req.body.passphrase;
+	
+	var tokenvalue = req.body.tokenvalue;
+	var addressto = req.body.addressto;
+
+	if(addressto != '' && tokenvalue!= '' && !isNaN(tokenvalue) && passphrase!='' && account!='' && tokenaddress!=''){
+		try{
+			web3.eth.defaultAccount = account;
+			var unlock = web3.personal.unlockAccount(account,passphrase);
+		} catch (err) {
+			res.end(JSON.stringify({error:err}));
+		}
+		
+		var contract = web3.eth.contract(abi).at(contractAddress);
+		var txHash = contract.transfer(addressto,tokenvalue);
+		
+		res.end(JSON.stringify({txHash:txHash}));
+	}else{
+		res.end(JSON.stringify({error:'Missing fields'}));
+	}
+});
+
 app.get('/getAccounts', function (req, res) {
 	var accounts = web3.eth.accounts;
 	res.end(JSON.stringify(accounts));
@@ -31,15 +60,14 @@ app.get('/getAccounts', function (req, res) {
 app.get('/createAccount', function (req, res) {
 	var url_parts = url.parse(req.url, true);
 	var query = url_parts.query;
-	//res.end(JSON.stringify({passphrase:query.passphrase}));
 	
 	if(query.passphrase!=''){
-		web3.personal.newAccount(query.passphrase,function(error,result){
-      if(!error){
-          console.log(result);
-          res.end(JSON.stringify({address:result}));
-      }
-     });
+		web3.personal.newAccount("password",function(error,result){
+			if(!error){
+				console.log(result);
+				res.end(JSON.stringify({address:result}));
+			}
+		});
 	}else{
 		res.end(JSON.stringify({error:'Passphrase required'}));
 	}
@@ -49,13 +77,23 @@ app.get('/index',function (req, res){
 	var fs = require('fs');
 	fs.readFile('./accounts.html', function (err, html) {
 		if (err) throw err;   
-		res.writeHeader(200, {"Content-Type": "text/html"});		
+		res.writeHeader(200, {"Content-Type": "text/html"});
 		res.end( html );
 	});
 })
+
+app.get('/tester',function (req, res){
+	var fs = require('fs');
+	fs.readFile('./tester.html', function (err, html) {
+		if (err) throw err;   
+		res.writeHeader(200, {"Content-Type": "text/html"});
+		res.end( html );
+	});
+})
+
 var server = app.listen(8081, function () {
   var host = server.address().address
   var port = server.address().port
 
-  console.log("Example app listening at http://%s:%s", host, port)
+  console.log("App listening at http://%s:%s", host, port)
 })
