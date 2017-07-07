@@ -27,6 +27,29 @@ var allowCrossDomain = function(req, res, next) {
 };
 app.use(allowCrossDomain);
 
+app.post('/mint', function(req, res) {
+    var contractAddress = req.body.tokenaddress;
+	var account = req.body.account;
+	var passphrase = req.body.passphrase;
+	var tokenvalue = req.body.tokenvalue;
+
+	if(tokenvalue!= '' && !isNaN(tokenvalue) && passphrase!='' && account!='' && contractAddress!=''){
+		try{
+			web3.eth.defaultAccount = account;
+			var unlock = web3.personal.unlockAccount(account,passphrase);
+		} catch (err) {
+			res.end(JSON.stringify({error:err}));
+		}
+		
+		var contract = web3.eth.contract(abi).at(contractAddress);
+		var txHash = contract.mintToken(account,tokenvalue);
+		
+		res.end(JSON.stringify({txHash:txHash}));
+	}else{
+		res.end(JSON.stringify({error:'Missing fields'}));
+	}
+});
+
 app.post('/transfer', function(req, res) {
     var contractAddress = req.body.tokenaddress;
 	var account = req.body.account;
@@ -52,11 +75,103 @@ app.post('/transfer', function(req, res) {
 	}
 });
 
-
+app.post('/setPrices', function(req, res) {
+    var contractAddress = req.body.token;
+	var sellprice = req.body.sellprice;
+	var buyprice = req.body.buyprice;
+	var account = req.body.account;
+	var passphrase = req.body.passphrase;
+	
+	if(contractAddress != '' && !isNaN(sellprice) && !isNaN(buyprice) && account!=''&& passphrase!=''){
+		try{
+			web3.eth.defaultAccount = account;
+			var unlock = web3.personal.unlockAccount(account,passphrase);
+		} catch (err) {
+			res.end(JSON.stringify({error:err}));
+		}
+		
+		var contract = web3.eth.contract(abi).at(contractAddress);
+		var txHash = contract.setPrices(parseInt(sellprice),parseInt(buyprice));
+		
+		res.end(JSON.stringify({txHash:txHash}));
+	}else{
+		res.end(JSON.stringify({error:'Missing fields'}));
+	}
+});
 
 app.get('/getAccounts', function (req, res) {
 	var accounts = web3.eth.accounts;
 	res.end(JSON.stringify(accounts));
+})
+
+app.get('/getAccntEthBalance', function (req, res) {
+	var url_parts = url.parse(req.url, true);
+	var query = url_parts.query;
+	var address = query.address;
+	if(address!=''){
+		var balance = web3.fromWei(web3.eth.getBalance(address), 'ether').toNumber();
+		res.end(JSON.stringify({address:address,balance:balance}));
+	}else{
+		res.end(JSON.stringify({error:'Passphrase required'}));
+	}
+})
+
+app.get('/getTokenName', function (req, res) {
+	var url_parts = url.parse(req.url, true);
+	var query = url_parts.query;
+	var address = query.address;
+	if(address!=''){
+		var myTokenContract = web3.eth.contract(abi).at(address);		
+		myTokenContract.name(function(err, result){
+			res.end(JSON.stringify({address:myTokenContract.address,name:result}));
+		})
+		
+	}else{
+		res.end(JSON.stringify({error:'Passphrase required'}));
+	}
+})
+
+app.get('/getBalanceOf', function (req, res) {
+	var url_parts = url.parse(req.url, true);
+	var query = url_parts.query;
+	var address = query.token;
+	var account = query.account;
+	if(address!=''){
+		var myTokenContract = web3.eth.contract(abi).at(address);		
+		res.end(JSON.stringify({address:account,balance:myTokenContract.balanceOf(account)}));
+	}else{
+		res.end(JSON.stringify({error:'Invalid address'}));
+	}
+})
+
+app.get('/getSellPrice', function (req, res) {
+	var url_parts = url.parse(req.url, true);
+	var query = url_parts.query;
+	var address = query.address;
+	if(address!=''){
+		var myTokenContract = web3.eth.contract(abi).at(address);		
+		myTokenContract.sellPrice(function(err, result){
+			res.end(JSON.stringify({address:address,sellPrice:result.c[0]}));
+		})
+		
+	}else{
+		res.end(JSON.stringify({error:'Invalid address'}));
+	}
+})
+
+app.get('/getBuyPrice', function (req, res) {
+	var url_parts = url.parse(req.url, true);
+	var query = url_parts.query;
+	var address = query.address;
+	if(address!=''){
+		var myTokenContract = web3.eth.contract(abi).at(address);		
+		myTokenContract.buyPrice(function(err, result){
+			res.end(JSON.stringify({address:address,buyPrice:result.c[0]}));
+		})
+		
+	}else{
+		res.end(JSON.stringify({error:'Invalid address'}));
+	}
 })
 
 app.get('/createAccount', function (req, res) {
@@ -74,6 +189,8 @@ app.get('/createAccount', function (req, res) {
 		res.end(JSON.stringify({error:'Passphrase required'}));
 	}
 })
+
+
 
 app.get('/index',function (req, res){
 	var fs = require('fs');
