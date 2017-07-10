@@ -131,6 +131,21 @@ app.get('/getTokenName', function (req, res) {
 	}
 })
 
+app.get('/getTotalSupply', function (req, res) {
+	var url_parts = url.parse(req.url, true);
+	var query = url_parts.query;
+	var address = query.address;
+	if(address!=''){
+		var myTokenContract = web3.eth.contract(abi).at(address);
+		myTokenContract.totalSupply(function(err, result){
+			res.end(JSON.stringify({address:myTokenContract.address,totalSupply:result}));
+		})
+		
+	}else{
+		res.end(JSON.stringify({error:'Passphrase required'}));
+	}
+})
+
 app.get('/getBalanceOf', function (req, res) {
 	var url_parts = url.parse(req.url, true);
 	var query = url_parts.query;
