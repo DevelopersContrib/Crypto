@@ -205,7 +205,32 @@ app.get('/createAccount', function (req, res) {
 	}
 })
 
-
+app.get('/getTransaction', function (req, res) {
+	var url_parts = url.parse(req.url, true);
+	var query = url_parts.query;
+	var txHash = query.txhash;
+	if(txHash!=''){
+		var tx = web3.eth.getTransaction(txHash);
+		if (tx != null) {
+			res.end(JSON.stringify({
+				nonce:tx.nonce,
+				blockHash:tx.blockHash,
+				blockNumber:tx.blockNumber,
+				transactionIndex:tx.transactionIndex,
+				from:tx.from,
+				to:tx.to,
+				value:tx.value,
+				gasPrice:tx.gasPrice,
+				gas:tx.gas,
+				input:tx.input
+			}));
+		}else{
+			res.end(JSON.stringify({error:'Invalid txHash'}));
+		}		
+	}else{
+		res.end(JSON.stringify({error:'Invalid txHash'}));
+	}
+})
 
 app.get('/index',function (req, res){
 	var fs = require('fs');

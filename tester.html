@@ -7,7 +7,7 @@
 <div>
 	<span>Create Account: </span><input type="text" placeholder="passphrase" id="new_passphrase"> <button id="new">Generate Account</button>
 	<hr>
-	<span>Enter Token Contract: </span><input id="tokencontractaddress" style="width: 400px;" type="text" value="" /> <button type="button" id="btnloadtoken">Load Token Contract</button><br>
+	<span>Enter Token Contract: </span><input id="tokencontractaddress" style="width: 400px;" type="text" value="0xa433715dEbEDE6299a15E99FFdD793683aA42cA6" /> <button type="button" id="btnloadtoken">Load Token Contract</button><br>
 	<span>Name: </span> <span class="tokenname"></span><br>
 	<span>Address: </span> <span id="tokenaddress"></span><br>
 	<span>Total Supply: </span> <span id="totalsupply"></span><br>
@@ -17,11 +17,14 @@
 	<span>Buy Price: </span> <input id="buyprice" style="width:100px" type="text" /> <button type="button" id="btnupdateprices">Update</button><br>
 	<hr>
 	<span>Transfer Token: </span> <input id="tokenvalue" style="width: 50px;" type="text" value="1" /> from: <select id="accounts"></select> to: <input id="to" style="width:400px" type="text" value="" /> <button type="button" id="btnsendtoken">Send</button><br>
-	<pre id="transaction"></pre>
+	
 	<hr>
 	<span>Wallet Address: </span> <input id="to2" style="width:400px" type="text" value="" /> <button type="button" id="btnbalanceof">Show Token Balance</button> <span id="balanceof"></span><hr>
 	
 	<span>Sell Token from: </span> <input id="selltokenfrom" style="width:400px" type="text" value="" /> Token: <input id="selltoken" style="width:100px" type="text" value="1" /> <button type="button" id="btnsell">Sell</button>
+	<hr>
+	<span>TxHash: </span> <input id="txhash" style="width:400px" type="text" value="" /> <button type="button" id="showtransaction">Show Transaction</button>
+	<pre id="transaction"></pre>
 </div>
 <hr>
 <h3 id="tokenname2">Methods</h3>
@@ -97,6 +100,26 @@
 		
 		*/
 		//getTransactionsByAccount($('#accounts').val());
+		
+		$('#showtransaction').click(function(){
+			if($("#txhash").val()!=''){
+				$.get(url+'/getTransaction?txhash='+$("#txhash").val(),function(data){
+					var tx = $.parseJSON(data);
+					$('#transaction').html(
+						"   nonce           : " + tx.nonce + "<br>"
+						+ "   blockHash       : " + tx.blockHash + "<br>"
+						+ "   blockNumber     : " + tx.blockNumber + "<br>"
+						+ "   transactionIndex: " + tx.transactionIndex + "<br>"
+						+ "   from            : " + tx.from + "<br>" 
+						+ "   to              : " + tx.to + "<br>"
+						+ "   value           : " + tx.value + "<br>"
+						+ "   gasPrice        : " + tx.gasPrice + "<br>"
+						+ "   gas             : " + tx.gas + "<br>"
+						+ "   input           : " + tx.input
+					);
+				});
+			}
+		});
 	});
 	/*
 	function sell()
@@ -217,36 +240,6 @@
 		});
 	}
 	/*
-	function printTransaction(txHash) {
-	  var tx = web3.eth.getTransaction(txHash);
-	  if (tx != null) {
-		console.log("  tx hash          : " + tx.hash + "\n"
-		  + "   nonce           : " + tx.nonce + "\n"
-		  + "   blockHash       : " + tx.blockHash + "\n"
-		  + "   blockNumber     : " + tx.blockNumber + "\n"
-		  + "   transactionIndex: " + tx.transactionIndex + "\n"
-		  + "   from            : " + tx.from + "\n" 
-		  + "   to              : " + tx.to + "\n"
-		  + "   value           : " + tx.value + "\n"
-		  + "   gasPrice        : " + tx.gasPrice + "\n"
-		  + "   gas             : " + tx.gas + "\n"
-		  + "   input           : " + tx.input);
-		  		  
-		  $('#transaction').html(
-				"  tx hash          : " + tx.hash + "<br>"
-				+ "   nonce           : " + tx.nonce + "<br>"
-				+ "   blockHash       : " + tx.blockHash + "<br>"
-				+ "   blockNumber     : " + tx.blockNumber + "<br>"
-				+ "   transactionIndex: " + tx.transactionIndex + "<br>"
-				+ "   from            : " + tx.from + "<br>" 
-				+ "   to              : " + tx.to + "<br>"
-				+ "   value           : " + tx.value + "<br>"
-				+ "   gasPrice        : " + tx.gasPrice + "<br>"
-				+ "   gas             : " + tx.gas + "<br>"
-				+ "   input           : " + tx.input
-		  );
-	  }
-	}
 	
 	
 	function getTransactionsByAccount(myaccount, startBlockNumber, endBlockNumber) {
