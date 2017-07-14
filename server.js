@@ -75,6 +75,61 @@ app.post('/transfer', function(req, res) {
 	}
 });
 
+app.post('/buy', function(req, res) {
+    var contractAddress = req.body.token;
+	var amount = req.body.amount;
+	var account = req.body.account;
+	var passphrase = req.body.passphrase;
+	
+	if(contractAddress != '' && !isNaN(amount) && account!=''&& passphrase!=''){
+		try{
+			var unlock = web3.personal.unlockAccount(account,passphrase);
+		} catch (err) {
+			res.end(JSON.stringify({error:err, msg:'invalid passphrase'}));
+		}
+		
+		try{
+			var value = parseInt(amount+'000000000000000000');
+			var contract = web3.eth.contract(abi).at(contractAddress);
+			var txHash = contract.buy({value: value,from:account})
+			
+			res.end(JSON.stringify({txHash:txHash}));
+		}catch(err){
+			res.end(JSON.stringify({error:err,msg:'error buy function'}));
+		}
+		
+	}else{
+		res.end(JSON.stringify({error:'Missing fields'}));
+	}
+});
+
+app.post('/sell', function(req, res) {
+    var contractAddress = req.body.token;
+	var amount = req.body.amount;
+	var account = req.body.account;
+	var passphrase = req.body.passphrase;
+	
+	if(contractAddress != '' && !isNaN(amount) && account!=''&& passphrase!=''){
+		try{
+			var unlock = web3.personal.unlockAccount(account,passphrase);
+		} catch (err) {
+			res.end(JSON.stringify({error:err, msg:'invalid passphrase'}));
+		}
+		
+		try{
+			var value = parseInt(amount);
+			var contract = web3.eth.contract(abi).at(contractAddress);
+			var txHash = contract.sell(value,{from:account});
+			res.end(JSON.stringify({txHash:txHash}));
+		}catch(err){
+			res.end(JSON.stringify({error:err,msg:'error buy function'}));
+		}
+		
+	}else{
+		res.end(JSON.stringify({error:'Missing fields'}));
+	}
+});
+
 app.post('/setPrices', function(req, res) {
     var contractAddress = req.body.token;
 	var sellprice = req.body.sellprice;
@@ -194,7 +249,7 @@ app.get('/createAccount', function (req, res) {
 	var query = url_parts.query;
 	
 	if(query.passphrase!=''){
-		web3.personal.newAccount("password",function(error,result){
+		web3.personal.newAccount(query.passphrase,function(error,result){
 			if(!error){
 				console.log(result);
 				res.end(JSON.stringify({address:result}));
@@ -238,11 +293,18 @@ app.get('/getBalances',function (req, res){
 	
 	var contract = web3.eth.contract(abi).at(query.address);
 	var rows = [];
-	var i =1; 
+	var i =1;
+	//var tokens = contract.balanceOf(query.address) / parseFloat(1e16);
+	var tokens = contract.balanceOf(query.address);
+	var ethers = web3.fromWei(web3.eth.getBalance(query.address), "ether");		
+	rows.push([i, query.address, tokens.toPrecision(10),ethers.toFixed(18)]);	
+	i++;
 	web3.eth.accounts.forEach( function(e){
-		var tokens = contract.balanceOf(e) / parseFloat(1e16);
-		var ethers = web3.fromWei(web3.eth.getBalance(e), "ether");		
-		rows.push([i, e, tokens.toPrecision(10),ethers.toFixed(18)]);	
+		//var tokens = contract.balanceOf(e) / parseFloat(1e16);
+		var tokens = contract.balanceOf(e);
+		var ethers = web3.fromWei(web3.eth.getBalance(e), "ether");
+		rows.push([i, e, tokens,ethers]);	
+		//rows.push([i, e, tokens.toPrecision(10),ethers.toFixed(18)]);	
 		i++;
 	})
 	res.end(JSON.stringify({accounts:rows}));

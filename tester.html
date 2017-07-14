@@ -7,7 +7,7 @@
 <div>
 	<span>Create Account: </span><input type="text" placeholder="passphrase" id="new_passphrase"> <button id="new">Generate Account</button>
 	<hr>
-	<span>Enter Token Contract: </span><input id="tokencontractaddress" style="width: 400px;" type="text" value="0xa433715dEbEDE6299a15E99FFdD793683aA42cA6" /> <button type="button" id="btnloadtoken">Load Token Contract</button><br>
+	<span>Enter Token Contract: </span><input id="tokencontractaddress" style="width: 400px;" type="text" value="" /> <button type="button" id="btnloadtoken">Load Token Contract</button><br>
 	<span>Name: </span> <span class="tokenname"></span><br>
 	<span>Address: </span> <span id="tokenaddress"></span><br>
 	<span>Total Supply: </span> <span id="totalsupply"></span><br>
@@ -21,7 +21,8 @@
 	<hr>
 	<span>Wallet Address: </span> <input id="to2" style="width:400px" type="text" value="" /> <button type="button" id="btnbalanceof">Show Token Balance</button> <span id="balanceof"></span><hr>
 	
-	<span>Sell Token from: </span> <input id="selltokenfrom" style="width:400px" type="text" value="" /> Token: <input id="selltoken" style="width:100px" type="text" value="1" /> <button type="button" id="btnsell">Sell</button>
+	<span>Buyer: </span> <input id="buyer" style="width:400px" type="text" value="" /> Token: <input id="buyamount" style="width:100px" type="text" value="1" /> <button type="button" id="btnbuy">Buy</button><br><br>
+	<span>Seller: </span> <input id="seller" style="width:400px" type="text" value="" /> Token: <input id="sellamount" style="width:100px" type="text" value="1" /> <button type="button" id="btnsell">Sell</button>
 	<hr>
 	<span>TxHash: </span> <input id="txhash" style="width:400px" type="text" value="" /> <button type="button" id="showtransaction">Show Transaction</button>
 	<pre id="transaction"></pre>
@@ -32,7 +33,6 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script type="text/javascript">
 	var url = window.location.origin;
-	var myTokenContract;
 	
 	$(document).ready(function() {
 		console.log('ready');
@@ -93,12 +93,14 @@
 			mint();
 		});
 		
-		/*return;
+		$('#btnbuy').click(function(){
+			buy();
+		});
+		
 		$('#btnsell').click(function(){
 			sell();
 		});
 		
-		*/
 		//getTransactionsByAccount($('#accounts').val());
 		
 		$('#showtransaction').click(function(){
@@ -121,28 +123,57 @@
 			}
 		});
 	});
-	/*
+	
 	function sell()
 	{
-		var token = $('#selltoken').val();
-		var accnt2 = $('#selltokenfrom').val();
-		var passpharase = prompt('Enter passphrase: ');
-		if(accnt2!='' && passpharase!='' ){
+		var amount = $('#sellamount').val();
+		var account = $('#seller').val();
+		var passphrase = prompt('Enter passphrase: ');
+		if(account!='' && passphrase!='' ){
 			try{
-				web3.eth.defaultAccount = accnt2;
-				var unlock = web3.personal.unlockAccount(accnt2,passpharase);
-				console.log(unlock);
-				//var tx = myTokenContract.sell(parseInt(token));
-				var tx = myTokenContract.sell(1);
-				console.log(tx);
-				getTokenBalance();
-				printTransaction(tx);
+				$.post(url+'/sell',
+				{
+					token:$('#tokencontractaddress').val(),
+					account:account,
+					passphrase:passphrase,
+					amount:amount,
+				}, function(data){
+					var token = jQuery.parseJSON(data);
+					console.log(token.txHash);
+					alert(token.txHash);
+					loadAccounts();
+				});
 			} catch (err) {
 				alert(err);
 			}
 		}
 	}
-	*/
+	
+	
+	function buy()
+	{
+		var amount = $('#buyamount').val();
+		var account = $('#buyer').val();
+		var passphrase = prompt('Enter passphrase: ');
+		if(account!='' && passphrase!='' ){
+			try{
+				$.post(url+'/buy',
+				{
+					token:$('#tokencontractaddress').val(),
+					account:account,
+					passphrase:passphrase,
+					amount:amount,
+				}, function(data){
+					var token = jQuery.parseJSON(data);
+					console.log(token.txHash);
+					alert(token.txHash);
+					loadAccounts();
+				});
+			} catch (err) {
+				alert(err);
+			}
+		}
+	}
 	
 	function mint()
 	{
@@ -239,7 +270,10 @@
 			}
 		});
 	}
-	/*	
+	/*
+	
+	
+	
 	function getTransactionsByAccount(myaccount, startBlockNumber, endBlockNumber) {
 	  if (endBlockNumber == null) {
 		endBlockNumber = web3.eth.blockNumber;
