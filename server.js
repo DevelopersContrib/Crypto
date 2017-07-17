@@ -145,14 +145,18 @@ app.post('/setPrices', function(req, res) {
 			res.end(JSON.stringify({error:err}));
 		}
 		
+		sellprice = web3.toWei(sellprice+'', 'ether');
+		buyprice = web3.toWei(buyprice+'', 'ether');
+		
 		var contract = web3.eth.contract(abi).at(contractAddress);
-		var txHash = contract.setPrices(parseInt(sellprice),parseInt(buyprice));
+		var txHash = contract.setPrices(sellprice,buyprice);
 		
 		res.end(JSON.stringify({txHash:txHash}));
 	}else{
 		res.end(JSON.stringify({error:'Missing fields'}));
 	}
 });
+
 
 app.get('/getAccounts', function (req, res) {
 	var accounts = web3.eth.accounts;
@@ -221,7 +225,7 @@ app.get('/getSellPrice', function (req, res) {
 	if(address!=''){
 		var myTokenContract = web3.eth.contract(abi).at(address);		
 		myTokenContract.sellPrice(function(err, result){
-			res.end(JSON.stringify({address:address,sellPrice:result.c[0]}));
+			res.end(JSON.stringify({address:address,sellPrice:web3.fromWei(result,'ether').toNumber()}));
 		})
 		
 	}else{
@@ -236,7 +240,7 @@ app.get('/getBuyPrice', function (req, res) {
 	if(address!=''){
 		var myTokenContract = web3.eth.contract(abi).at(address);		
 		myTokenContract.buyPrice(function(err, result){
-			res.end(JSON.stringify({address:address,buyPrice:result.c[0]}));
+			res.end(JSON.stringify({address:address,buyPrice:web3.fromWei(result,'ether').toNumber()}));
 		})
 		
 	}else{
