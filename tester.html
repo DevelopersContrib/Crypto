@@ -21,7 +21,10 @@
 	<hr>
 	<span>Wallet Address: </span> <input id="to2" style="width:400px" type="text" value="" /> <button type="button" id="btnbalanceof">Show Token Balance</button> <span id="balanceof"></span><hr>
 	
-	<span>Buyer: </span> <input id="buyer" style="width:400px" type="text" value="" /> Token: <input id="buyamount" style="width:100px" type="text" value="1" /> <button type="button" id="btnbuy">Buy</button><br><br>
+	<span>Buyer: </span> <input id="buyer" style="width:400px" type="text" value="" /> Eth Amount: <input id="buyamount" style="width:100px" type="text" value="1" /> <button type="button" id="btnbuy">Buy</button>
+	<hr>
+	<span>Buyer: </span> <input id="buyer2" style="width:400px" type="text" value="" /> Token: <input id="buyamount2" style="width:100px" type="text" value="" /> <span id="totalamount"></span> <button type="button" id="btnbuy2">Buy</button>
+	<hr>
 	<span>Seller: </span> <input id="seller" style="width:400px" type="text" value="" /> Token: <input id="sellamount" style="width:100px" type="text" value="1" /> <button type="button" id="btnsell">Sell</button>
 	<hr>
 	<span>TxHash: </span> <input id="txhash" style="width:400px" type="text" value="" /> <button type="button" id="showtransaction">Show Transaction</button>
@@ -44,6 +47,28 @@
 			loadContract($('#tokencontractaddress').val());
 		});
 		
+
+		$('#buyamount2').on('keypress', function(e)
+		{
+			if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)){
+				e.stopImmediatePropagation();
+				return false;
+			}
+		}).on('keyup change', function(e){
+			$('#totalamount').html((totalEth())+' Eth');
+		});
+		
+		$('#btnbuy2').click(function(){
+			var account = $('#buyer2').val();
+			buy(account,totalEth());
+		});
+				
+		function totalEth(){
+			var buyprice = $('#buyprice').val();
+			var amount = $('#buyamount2').val();
+			return (amount*buyprice);
+		}
+
 		$('#btnbalanceof').click(function(){
 			var addr = $('#to2').val();
 			if(addr!=""){
@@ -94,7 +119,9 @@
 		});
 		
 		$('#btnbuy').click(function(){
-			buy();
+			var amount = $('#buyamount').val();
+			var account = $('#buyer').val();
+			buy(account,amount);
 		});
 		
 		$('#btnsell').click(function(){
@@ -150,10 +177,9 @@
 	}
 	
 	
-	function buy()
+	function buy(buyer,amount)
 	{
-		var amount = $('#buyamount').val();
-		var account = $('#buyer').val();
+		var account = buyer;
 		var passphrase = prompt('Enter passphrase: ');
 		if(account!='' && passphrase!='' ){
 			try{

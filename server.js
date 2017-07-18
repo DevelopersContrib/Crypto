@@ -82,6 +82,7 @@ app.post('/buy', function(req, res) {
 	var passphrase = req.body.passphrase;
 	
 	if(contractAddress != '' && !isNaN(amount) && account!=''&& passphrase!=''){
+		var value = web3.toWei(amount, 'ether'));
 		try{
 			var unlock = web3.personal.unlockAccount(account,passphrase);
 		} catch (err) {
@@ -89,7 +90,6 @@ app.post('/buy', function(req, res) {
 		}
 		
 		try{
-			var value = parseInt(amount+'000000000000000000');
 			var contract = web3.eth.contract(abi).at(contractAddress);
 			var txHash = contract.buy({value: value,from:account})
 			
@@ -138,15 +138,14 @@ app.post('/setPrices', function(req, res) {
 	var passphrase = req.body.passphrase;
 	
 	if(contractAddress != '' && !isNaN(sellprice) && !isNaN(buyprice) && account!=''&& passphrase!=''){
+		sellprice = web3.toWei(sellprice, 'ether');
+		buyprice = web3.toWei(buyprice, 'ether');
 		try{
 			web3.eth.defaultAccount = account;
 			var unlock = web3.personal.unlockAccount(account,passphrase);
 		} catch (err) {
 			res.end(JSON.stringify({error:err}));
 		}
-		
-		sellprice = web3.toWei(sellprice+'', 'ether');
-		buyprice = web3.toWei(buyprice+'', 'ether');
 		
 		var contract = web3.eth.contract(abi).at(contractAddress);
 		var txHash = contract.setPrices(sellprice,buyprice);
@@ -225,7 +224,7 @@ app.get('/getSellPrice', function (req, res) {
 	if(address!=''){
 		var myTokenContract = web3.eth.contract(abi).at(address);		
 		myTokenContract.sellPrice(function(err, result){
-			res.end(JSON.stringify({address:address,sellPrice:web3.fromWei(result,'ether').toNumber()}));
+			res.end(JSON.stringify({address:address,result:result,sellPrice:web3.fromWei(result,'ether').toNumber()}));
 		})
 		
 	}else{
@@ -240,7 +239,7 @@ app.get('/getBuyPrice', function (req, res) {
 	if(address!=''){
 		var myTokenContract = web3.eth.contract(abi).at(address);		
 		myTokenContract.buyPrice(function(err, result){
-			res.end(JSON.stringify({address:address,buyPrice:web3.fromWei(result,'ether').toNumber()}));
+			res.end(JSON.stringify({address:address,result:result,buyPrice:web3.fromWei(result,'ether').toNumber()}));
 		})
 		
 	}else{
