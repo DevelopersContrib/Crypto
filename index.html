@@ -38,7 +38,7 @@ tr:nth-child(even) {
 <script type="text/javascript">
 var url = window.location.origin;
 $(document).ready(function() {
-	$.get(url+'/getBalances?address={address}',function(data){
+	$.get(url+'/getBalances?address={address}&param={param}',function(data){
 		var ar = jQuery.parseJSON(data).accounts;
 		var theTable = "";
 		for(var j=0;j<ar.length;j++){
