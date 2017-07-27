@@ -1,0 +1,369 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DAO</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="http://momentjs.com/downloads/moment.min.js"></script>  
+  <script src="http://timeago.yarp.com/jquery.timeago.js"></script>  
+  
+  <style>
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+</style>
+</head>
+<body class="container">
+<h2>DAO: {dao}</h2>
+<span>Minimum Quorum: </span> <span id="minimumQuorum"></span><br>
+<span>Owner: </span> <input id="owner" style="width:400px" type="text" value="" /><hr>
+<span>Send Eth: </span> <input id="ethvalue" style="width: 50px;" type="text" value="1" /> from: <input id="from" style="width:400px" type="text" value="" /> to: <input id="to" style="width:400px" type="text" value="" /> <button type="button" id="btnsendeth">Send</button><hr>
+<span>Transfer Token: </span> <input id="tokenvalue" style="width: 50px;" type="text" value="1" /> from: <input id="tokenfrom" style="width:400px" type="text" value="" /> to: <input id="tokento" style="width:400px" type="text" value="" /> <button type="button" id="btnsendtoken">Send</button><hr>
+<span>Member Address: </span> <input id="memberaddress" style="width:400px" type="text" value="" /> <span>Name: </span> <input id="membername" style="width:400px" type="text" value="" /> <button type="button" id="btnaddmember">Add Member</button> <hr>
+<span>Member Address: </span> <input id="removememberaddress" style="width:400px" type="text" value="" /> <button type="button" id="btnremovemember">Remove Member</button> <hr>
+
+<h3>New Proposal</h3>
+<span>From Address: </span> <input id="fromaddress" style="width:400px" type="text" value="" /> 
+<span>Beneficiary Address: </span> <input id="beneficiaryaddress" style="width:400px" type="text" value="" /> <br><br><span>Eth Amount: </span> <input id="ethamount" style="width:100px" type="text" value="" /> <span>Description:</span> <input id="description" style="width:400px" type="text" value="" /> <button type="button" id="btnsubmitproposal">Submit</button> <hr>
+<h2>Proposals</h2><button style="display:none;" type="button" id="btnreloadproposal">Reload Proposal</button>
+<table id="proposals">
+<thead>
+<tr>
+<th>Created By</th>
+<th>Beneficiary</th>
+<th>Eth Amount</th>
+<th>Desc</th>
+<th>Votes</th>
+<th>Results</th>
+<th>Passed</th>
+<th>Executed</th>
+</tr>
+</thead>
+<tbody>
+
+</tbody>
+</table>
+<hr>
+<h2>Accounts</h2><span id="loading">Loading...</span> <button style="display:none;" type="button" id="btnreloadmembers">Reload Members</button>
+<table id="table">
+<tbody>
+<tr>
+<td>#</td>
+<td>address</td>
+<td>Token</td>
+<td>Eth</td>
+
+
+</tr>
+</tbody>
+</table>
+
+<script type="text/javascript">
+var url = window.location.origin;
+var address = '{address}';
+var minimumQuorum = 0;
+$(document).ready(function() {
+	$('#btnsendtoken').click(function(){
+		var accnt1 = $('#tokenfrom').val();
+		var to = $('#tokento').val();
+		var tokenvalue = $('#tokenvalue').val();
+		var passphrase = prompt('Enter passphrase: ');
+		if(accnt1!='' && to != '' && tokenvalue!= '' && !isNaN(tokenvalue) && passphrase!='' ){
+			$.post(url+'/transfer',
+			{
+				tokenaddress:address,
+				account:accnt1,
+				passphrase:passphrase,
+				tokenvalue:tokenvalue,
+				addressto:to
+			}, function(data){
+				var token = jQuery.parseJSON(data);
+				console.log(token.txHash);
+				alert(token.txHash);
+				loadAccounts();
+			});
+		}else{
+			alert('Error');
+		}
+	});
+	
+	$('#btnsendeth').click(function(){
+		var accnt1 = $('#from').val();
+		var to = $('#to').val();
+		var ethvalue = $('#ethvalue').val();
+		var passphrase = prompt('Enter passphrase: ');
+		if(accnt1!='' && to != '' && ethvalue!= '' && !isNaN(ethvalue) && passphrase!='' ){
+			$.post(url+'/send',
+			{
+				account:accnt1,
+				passphrase:passphrase,
+				value:ethvalue,
+				addressto:to
+			}, function(data){
+				loadMembers();
+				var token = jQuery.parseJSON(data);
+				console.log(token.txHash);
+				alert(token.txHash);
+			});
+		}else{
+			alert('Error');
+		}
+	});
+	$.get(url+'/getMinimumQuorum?address={dao}',function(data){
+		var d = jQuery.parseJSON(data);
+		$('#minimumQuorum').html(d.result);
+		minimumQuorum = parseInt(d.result);
+	});
+
+	$('#btnreloadmembers').click(function(){
+		$('.address').each(function(){
+			var text = $(this).attr('data-text');
+			$(this).html(text);
+		});
+		loadMembers();
+	});
+	
+	$('#btnreloadproposal').click(function(){
+		loadProposals();
+	});
+
+	loadAccounts();
+	
+	$('#btnsubmitproposal').click(function(){
+		var accnt1 = $('#fromaddress').val();
+		
+		if(accnt1=='') accnt1 = $('#owner').val();
+		
+		var beneficiaryaddress = $('#beneficiaryaddress').val();
+		var ethamount = $('#ethamount').val();
+		var description = $('#description').val();
+		var passphrase = prompt('Enter passphrase: ');
+		if(accnt1!='' && beneficiaryaddress != '' && description!= '' && passphrase!='' ){
+			$.post(url+'/newProposal',
+			{
+				tokenaddress:'{dao}',
+				account:accnt1,
+				passphrase:passphrase,
+				beneficiary:beneficiaryaddress,
+				ethamount:ethamount,
+				description:description,
+			}, function(data){
+				var token = jQuery.parseJSON(data);
+				console.log(token.txHash);
+				alert(token.txHash);
+				loadProposals();
+			});
+		}else{
+			alert('Error');
+		}
+	});
+	
+	$('#btnaddmember').click(function(){
+		var accnt1 = $('#owner').val();
+		var memberaddress = $('#memberaddress').val();
+		var membername = $('#membername').val();
+		var passphrase = prompt('Enter passphrase: ');
+		if(accnt1!='' && memberaddress != '' && membername!= '' && passphrase!='' ){
+			$.post(url+'/addMember',
+			{
+				tokenaddress:'{dao}',
+				account:accnt1,
+				passphrase:passphrase,
+				memberaddress:memberaddress,
+				membername:membername
+			}, function(data){
+				var token = jQuery.parseJSON(data);
+				console.log(token.txHash);
+				alert(token.txHash);
+				loadMembers();
+			});
+		}else{
+			alert('Error');
+		}
+	});
+	
+	$('#btnremovemember').click(function(){
+		var accnt1 = $('#owner').val();
+		var memberaddress = $('#removememberaddress').val();
+		var passphrase = prompt('Enter passphrase: ');
+		if(accnt1!='' && memberaddress != '' && passphrase!='' ){
+			$.post(url+'/removeMember',
+			{
+				tokenaddress:'{dao}',
+				account:accnt1,
+				passphrase:passphrase,
+				memberaddress:memberaddress,
+			}, function(data){
+				var token = jQuery.parseJSON(data);
+				console.log(token.txHash);
+				alert(token.txHash);
+				loadMembers();
+			});
+		}else{
+			alert('Error');
+		}
+	});
+	
+	loadProposals();
+});
+
+function loadAccounts()
+{
+	$.get(url+'/getBalances?address='+address+'&param={param}',function(data){
+		var ar = jQuery.parseJSON(data).accounts;
+		var theTable = "";
+		for(var j=0;j<ar.length;j++){
+			theTable += '<tr>';
+			for(var k=0;k<ar[j].length;k++){
+				if(k==1){
+					var id = ar[j][k].split(' ')[0];
+					theTable += '<td class="address" id="'+id+'" data-text="'+ar[j][k]+'" >'+ar[j][k]+'</td>';
+				}else{
+					theTable += '<td class="address">'+ar[j][k]+'</td>';
+				}
+			}
+			theTable += '</tr>';
+		}
+		$("#table tr").not(':first').remove();
+		$("#table").append(theTable);
+		$('#loading').remove();
+		$('#btnreloadmembers').show();
+		loadMembers();
+	});
+}
+
+function loadProposals()
+{
+	$('#proposals tbody tr').remove();
+	$.get(url+'/getProposalCount?address={dao}',function(data){
+		var d = jQuery.parseJSON(data);
+		
+		for(var x=0;x<d.result;x++){
+			$.get(url+'/getProposal?address={dao}&index='+x,function(data){
+				var data = jQuery.parseJSON(data);
+				var beneficiary = data.result[0];
+				var ethamount = data.result[1];
+				var description = data.result[2];
+				var deadline = data.result[3];
+				var executed = data.result[4];
+				var proposalPassed = data.result[5];
+				var numberOfVotes = data.result[6];
+				var currentResult = data.result[7];
+				var createdby = data.result[9];
+				var tr = "<tr>"+
+				"<td>"+createdby+"</td>"+
+				"<td>"+beneficiary+"</td>"+
+				"<td>"+ethamount+"</td>"+
+				"<td>"+description+"</td>"+
+				"<td>"+numberOfVotes+"</td>"+
+				"<td>"+currentResult+"</td>"+
+				"<td>"+proposalPassed+"</td>";
+				if(executed){
+					tr +="<td>"+executed+"</td>";
+				}else{
+					if(numberOfVotes >= minimumQuorum){
+						tr +='<td><button type="button" class="vote" id="'+data.index+'">Vote</button> '+
+							'<button type="button" class="execute" data-index="'+data.index+'" id="">Execute</button></td>';
+					}else{
+						tr +='<td><button type="button" class="vote" id="'+data.index+'">Vote</button></td>';
+					}
+				}
+				
+				$("#proposals").append(tr);
+				initVoteExecute();
+				$('#btnreloadproposal').show();
+			});
+		}
+	});
+}
+
+function initVoteExecute()
+{
+	$('.execute').off('click').on('click',function(){
+		var index = $(this).attr('data-index');
+		var address = prompt('Execute from address');		
+		var passphrase = prompt('Enter passphrase: ');
+		
+		if(index!="" && address!='' && passphrase!=''){
+			$.post(url+'/executeProposal',
+			{
+				tokenaddress:'{dao}',
+				account:address,
+				passphrase:passphrase,
+				proposalnumber:index,
+			}, function(data){
+				var token = jQuery.parseJSON(data);
+				console.log(token.txHash);
+				alert(token.txHash);
+				loadProposals();
+				loadMembers();
+			});
+		}
+	});
+
+	$('.vote').off('click').on('click',function(){
+		var index = $(this).attr('id');
+		var yesno = prompt('Enter Y/N');
+		
+		yesno = yesno.toUpperCase();
+		var supportsproposal = yesno=="Y"?1:0;
+		
+		var justification = prompt('Enter justification');
+		var address = prompt('Execute from address');		
+		var passphrase = prompt('Enter passphrase: ');
+		
+		if(index!="" && address!='' && passphrase!=''){
+			$.post(url+'/vote',
+			{
+				tokenaddress:'{dao}',
+				account:address,
+				passphrase:passphrase,
+				proposalnumber:index,
+				supportsproposal:supportsproposal,
+				justificationtext:justification,
+			}, function(data){
+				var token = jQuery.parseJSON(data);
+				console.log(token.txHash);
+				alert(token.txHash);
+				loadProposals();
+			});
+		}
+	});
+}
+
+function loadMembers()
+{
+	$.get(url+'/getMembersCount?address={dao}',function(data){
+		var d = jQuery.parseJSON(data);
+		
+		for(var x=0;x<d.result;x++){
+			$.get(url+'/getMember?address={dao}&index='+x,function(data){
+				var data = jQuery.parseJSON(data);
+				var id = data.result[0];
+				var name = data.result[1];
+				var text = $('#'+id).attr('data-text');
+				if(name=='founder'){
+					$('#owner').val(id);
+					$('#fromaddress').val(id);
+				}
+				$('#'+id).html(text+' - Member '+name);
+			});
+		}
+	});
+}
+</script>
+</body>
+	
+</html>
