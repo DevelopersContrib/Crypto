@@ -40,6 +40,7 @@ contract Token {
 }
 
 contract Congress is owned, tokenRecipient {
+	string public name;
 	Token public ctbToken;
     /* Contract Variables and events */
     uint public minimumQuorum;
@@ -55,6 +56,7 @@ contract Congress is owned, tokenRecipient {
     event MembershipChanged(address member, bool isMember);
     event ChangeOfRules(uint minimumQuorum, int majorityMargin);
 	
+		
     struct Contribution {
         address recipient;
         uint amount;
@@ -65,7 +67,7 @@ contract Congress is owned, tokenRecipient {
         uint numberOfVotes;
         int currentResult;
         bytes32 contributionHash;
-		address createdby;
+		address createdBy;
         Vote[] votes;
         mapping (address => bool) voted;
     }
@@ -74,6 +76,8 @@ contract Congress is owned, tokenRecipient {
         address member;
         string name;
         uint memberSince;
+		string role;
+		bool canVote;
     }
 
     struct Vote {
@@ -91,27 +95,40 @@ contract Congress is owned, tokenRecipient {
 
     /* First time setup */
     function Congress(
+		string brandname,
         uint minimumQuorumForContributions,
         int marginOfVotesForMajority, address congressLeader, Token addressOfCTBToken
 		
     ) payable {
+		name = brandname;
         changeVotingRules(minimumQuorumForContributions, marginOfVotesForMajority);
         if (congressLeader != 0) owner = congressLeader;
         // It’s necessary to add an empty first member
-        addMember(0, ''); 
+        addMember(0, '', '', false); 
         // and let's add the founder, to save a step later       
-        addMember(owner, 'founder');
+        addMember(owner, 'founder', 'founder',true);
 		ctbToken = Token(addressOfCTBToken);
     }
 
     /*make member*/
 
-	function addMember(address targetMember, string memberName) onlyOwner {
+	function addMember(address targetMember, string memberName, string memberRole, bool memberCanVote) onlyOwner {
 		uint id;
 		if (memberId[targetMember] == 0) {
 			memberId[targetMember] = members.length;
 			id = members.length++;
-			members[id] = Member({member: targetMember, memberSince: now, name: memberName});
+			members[id] = Member({member: targetMember, memberSince: now, name: memberName, role: memberRole, canVote: memberCanVote});
+			MembershipChanged(targetMember, true);
+		}
+	}
+	
+	function updateMember(address targetMember, string memberName, string memberRole, bool memberCanVote) onlyOwner{
+		if (memberId[targetMember] != 0) {
+			uint id = memberId[targetMember];
+            Member m = members[id];
+			m.name = memberName;
+			m.role = memberRole;
+			m.canVote = memberCanVote;
 			MembershipChanged(targetMember, true);
 		}
 	}
@@ -144,7 +161,7 @@ contract Congress is owned, tokenRecipient {
     /* Function to create a new contribution */
     function newContribution(
         address beneficiary,
-        uint etherAmount,
+        uint amount,
         string JobDescription,
         bytes transactionBytecode
     )
@@ -154,15 +171,15 @@ contract Congress is owned, tokenRecipient {
         contributionID = contributions.length++;
         Contribution p = contributions[contributionID];
         p.recipient = beneficiary;		
-        p.amount = etherAmount;
+        p.amount = amount;
         p.description = JobDescription;
-        p.contributionHash = sha3(beneficiary, etherAmount, transactionBytecode);
+        p.contributionHash = sha3(beneficiary, amount, transactionBytecode);
         p.dateCreated = now;
         p.executed = false;
         p.contributionPassed = false;
         p.numberOfVotes = 0;
-		p.createdby = msg.sender;
-        ContributionAdded(contributionID, beneficiary, etherAmount, JobDescription);
+		p.createdBy = msg.sender;
+        ContributionAdded(contributionID, beneficiary, amount, JobDescription);
         numContributions = contributionID+1;
 
         return contributionID;
@@ -176,14 +193,14 @@ contract Congress is owned, tokenRecipient {
     function checkContributionCode(
         uint contributionNumber,
         address beneficiary,
-        uint etherAmount,
+        uint amount,
         bytes transactionBytecode
     )
         constant
         returns (bool codeChecksOut)
     {
         Contribution p = contributions[contributionNumber];
-        return p.contributionHash == sha3(beneficiary, etherAmount, transactionBytecode);
+        return p.contributionHash == sha3(beneficiary, amount, transactionBytecode);
     }
 
     function vote(
@@ -194,8 +211,11 @@ contract Congress is owned, tokenRecipient {
         onlyMembers
         returns (uint voteID)
     {
+		uint id = memberId[msg.sender];
+		if(!members[id].canVote) throw;
+		
         Contribution p = contributions[contributionNumber];         // Get the contribution
-        if (p.voted[msg.sender] == true) throw;         // If has already voted, cancel
+        if (p.voted[msg.sender] == true || p.executed) throw;         // If has already voted or executed, cancel
         p.voted[msg.sender] = true;                     // Set this voter as having voted
         p.numberOfVotes++;                              // Increase the number of votes
         if (supportsContribution) {                         // If they support the contribution
@@ -208,7 +228,7 @@ contract Congress is owned, tokenRecipient {
         return p.numberOfVotes;
     }
 
-    function executeContribution(uint contributionNumber, bytes transactionBytecode) {
+    function executeContribution(uint contributionNumber, bytes transactionBytecode) onlyOwner {
         Contribution p = contributions[contributionNumber];
         /* Check if the contribution can be executed:
            - Has the voting deadline arrived?
@@ -216,7 +236,8 @@ contract Congress is owned, tokenRecipient {
            - Does the transaction code match the contribution?
            - Has a minimum quorum?
         */
-			
+		
+		
         if (p.executed
             || p.contributionHash != sha3(p.recipient, p.amount, transactionBytecode)
             || p.numberOfVotes < minimumQuorum)
