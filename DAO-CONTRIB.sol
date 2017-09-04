@@ -52,7 +52,7 @@ contract Congress is owned, tokenRecipient {
     event Voted(uint contributionID, bool position, address voter, string justification);
     event ContributionTallied(uint contributionID, int result, uint quorum, bool active);
     event MembershipChanged(address member, bool isMember);
-    event ChangeOfRules(uint minimumQuorum, int majorityMargin);
+    event ChangeOfRules(uint newMinimumQuorum, int newMajorityMargin);
 	
 		
     struct Contribution {
@@ -85,8 +85,13 @@ contract Congress is owned, tokenRecipient {
         string justification;
     }
 
-    modifier onlyMembers {
-        require (memberId[msg.sender] == 0);
+    modifier onlyOwner {
+		require (msg.sender == owner);
+		_;
+	}
+	
+	modifier onlyMembers {
+        require(memberId[msg.sender] != 0);
         _;
     }
 
@@ -116,7 +121,7 @@ contract Congress is owned, tokenRecipient {
 	function updateMember(address targetMember, string memberName, string memberRole, bool memberCanVote) onlyOwner{
 		if (memberId[targetMember] != 0) {
 			uint id = memberId[targetMember];
-            Member m = members[id];
+            Member storage m = members[id];
 			m.name = memberName;
 			m.role = memberRole;
 			m.canVote = memberCanVote;
@@ -125,8 +130,8 @@ contract Congress is owned, tokenRecipient {
 	}
 
     function removeMember(address targetMember) onlyOwner {
-        if (memberId[targetMember] == 0) throw;
-
+        require (memberId[targetMember] != 0);
+		
         for (uint i = memberId[targetMember]; i<members.length-1; i++){
             members[i] = members[i+1];
         }
@@ -139,11 +144,11 @@ contract Congress is owned, tokenRecipient {
     }
 
     function changeVotingRules(
-        uint minimumQuorumForContributions,
-        int marginOfVotesForMajority
+        uint minimumQuorumForContributions_,
+        int marginOfVotesForMajority_
     ) onlyOwner {
-        minimumQuorum = minimumQuorumForContributions;
-        majorityMargin = marginOfVotesForMajority;
+        minimumQuorum = minimumQuorumForContributions_;
+        majorityMargin = marginOfVotesForMajority_;
 
         ChangeOfRules(minimumQuorum, majorityMargin);
     }
@@ -157,10 +162,10 @@ contract Congress is owned, tokenRecipient {
         onlyMembers
         returns (uint contributionID)
     {
-		require (memberId[beneficiary] == 0);
+		require (memberId[beneficiary] != 0);
 		
         contributionID = contributions.length++;
-        Contribution p = contributions[contributionID];
+        Contribution storage p = contributions[contributionID];
         p.recipient = beneficiary;		
         p.amount = amount;
         p.description = JobDescription;
@@ -197,7 +202,7 @@ contract Congress is owned, tokenRecipient {
         constant
         returns (bool codeChecksOut)
     {
-        Contribution p = contributions[contributionNumber];
+        Contribution storage p = contributions[contributionNumber];
 		return p.contributionHash == sha3(beneficiary, amount);
     }
 
@@ -210,10 +215,10 @@ contract Congress is owned, tokenRecipient {
         returns (uint voteID)
     {
 		uint id = memberId[msg.sender];
-		require(!members[id].canVote);
+		require(members[id].canVote);
 		
-        Contribution p = contributions[contributionNumber];
-        require (p.voted[msg.sender] == true || p.executed);
+        Contribution storage p = contributions[contributionNumber];
+        require (!p.voted[msg.sender] && !p.executed);
         p.voted[msg.sender] = true;
         p.numberOfVotes++;
         if (supportsContribution) {
@@ -227,15 +232,15 @@ contract Congress is owned, tokenRecipient {
     }
 
 	function executeContribution(uint contributionNumber) onlyOwner {
-        Contribution p = contributions[contributionNumber];
-        require (p.executed
-			|| p.contributionHash != sha3(p.recipient, p.amount)
-            || p.numberOfVotes < minimumQuorum);
-
+        Contribution storage p = contributions[contributionNumber];
+        
+		require (!p.executed
+              && p.contributionHash == sha3(p.recipient, p.amount)
+              && p.numberOfVotes >= minimumQuorum);
         
         if (p.currentResult > majorityMargin) {
 			if(p.tokenaddress==address(0)){
-				require (!p.recipient.call.value(p.amount * 1 ether)());
+				require(p.recipient.call.value(p.amount * 1 ether)());
 			}else{
 				Token t = Token(p.tokenaddress); 
 				t.transfer(p.recipient, p.amount);
