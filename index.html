@@ -29,7 +29,6 @@ tr:nth-child(even) {
 <tr>
 <td>#</td>
 <td>address</td>
-<td>Token</td>
 <td>Eth</td>
 </tr>
 </tbody>
@@ -38,17 +37,23 @@ tr:nth-child(even) {
 <script type="text/javascript">
 var url = window.location.origin;
 $(document).ready(function() {
-	$.get(url+'/getBalances?address={address}&param={param}',function(data){
-		var ar = jQuery.parseJSON(data).accounts;
-		var theTable = "";
-		for(var j=0;j<ar.length;j++){
-			theTable += '<tr>';
-			for(var k=0;k<ar[j].length;k++){             
-				theTable += '<td>'+ar[j][k]+'</td>';
-			}
-			theTable += '</tr>';
+	$.get(url+'/getBalances2?address={address}&param={param}',function(data){
+		var d = jQuery.parseJSON(data);
+		for(var x=0;x<d.tokens.length;x++){
+			jQuery('#table tr').append('<td>'+d.tokens[x].symbol+'</td>');
 		}
-		$("#table").append(theTable);
+		
+		for(var x=0;x<d.accounts.length;x++){
+			var col = '<td>'+d.accounts[x].index+'</td>';
+			var n = d.accounts[x].address+' '+d.accounts[x].name;
+			col += '<td class="address" id="'+d.accounts[x].address+'" data-text="'+n+'">'+n+'</td>';
+			col += '<td>'+d.accounts[x].eth+'</td>';
+			
+			for(var i=0;i<d.accounts[x].tokens.length;i++){
+				col+='<td>'+d.accounts[x].tokens[i].value+'</td>';
+			}
+			$("#table").append('<tr>'+col+'</tr>');
+		}
 		$('#loading').remove();
 	});
 });
