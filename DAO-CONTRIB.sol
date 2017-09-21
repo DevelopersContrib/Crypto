@@ -40,6 +40,7 @@ contract Token {
 }
 
 contract Congress is owned, tokenRecipient {
+/* Contract Variables and events */
 	string public name;
     uint public minimumQuorum;
     int public majorityMargin;
@@ -89,12 +90,12 @@ contract Congress is owned, tokenRecipient {
 		require (msg.sender == owner);
 		_;
 	}
-	
+	/* modifier that allows only shareholders to vote and create new contribution */
 	modifier onlyMembers {
         require(memberId[msg.sender] != 0);
         _;
     }
-
+/* First time setup */
     function Congress(
 		string brandname,
         uint minimumQuorumForContributions,
@@ -104,10 +105,12 @@ contract Congress is owned, tokenRecipient {
 		name = brandname;
         changeVotingRules(minimumQuorumForContributions, marginOfVotesForMajority);
         if (congressLeader != 0) owner = congressLeader;
+	// It’s necessary to add an empty first member
         addMember(0, '', '', false); 
+	// and let's add the founder, to save a step later 
         addMember(owner, 'founder', 'founder',true);
     }
-
+/*make member*/
 	function addMember(address targetMember, string memberName, string memberRole, bool memberCanVote) onlyOwner {
 		uint id;
 		if (memberId[targetMember] == 0) {
@@ -117,7 +120,7 @@ contract Congress is owned, tokenRecipient {
 			MembershipChanged(targetMember, true);
 		}
 	}
-	
+	 /*update member*/
 	function updateMember(address targetMember, string memberName, string memberRole, bool memberCanVote) onlyOwner{
 		if (memberId[targetMember] != 0) {
 			uint id = memberId[targetMember];
@@ -128,7 +131,7 @@ contract Congress is owned, tokenRecipient {
 			MembershipChanged(targetMember, true);
 		}
 	}
-
+ /*remove member*/
     function removeMember(address targetMember) onlyOwner {
         require (memberId[targetMember] != 0);
 		
@@ -142,7 +145,7 @@ contract Congress is owned, tokenRecipient {
 	function getMembersCount() public constant returns(uint) {
         return members.length;
     }
-
+ /*change rules*/
     function changeVotingRules(
         uint minimumQuorumForContributions_,
         int marginOfVotesForMajority_
@@ -152,7 +155,7 @@ contract Congress is owned, tokenRecipient {
 
         ChangeOfRules(minimumQuorum, majorityMargin);
     }
-
+/* Function to create a new contribution */
     function newContribution(
         address beneficiary,
         uint amount,
@@ -193,7 +196,7 @@ contract Congress is owned, tokenRecipient {
 	function getContributionCount() public constant returns(uint) {
         return contributions.length;
     }
-
+/* function to check if a contribution code matches */
     function checkContributionCode(
         uint contributionNumber,
         address beneficiary,
@@ -217,14 +220,14 @@ contract Congress is owned, tokenRecipient {
 		uint id = memberId[msg.sender];
 		require(members[id].canVote);
 		
-        Contribution storage p = contributions[contributionNumber];
-        require (!p.voted[msg.sender] && !p.executed);
-        p.voted[msg.sender] = true;
-        p.numberOfVotes++;
-        if (supportsContribution) {
-            p.currentResult++;
-        } else { 
-            p.currentResult--; 
+        Contribution storage p = contributions[contributionNumber]; 	// Get the contribution
+        require (!p.voted[msg.sender] && !p.executed); 			// If has already voted, cancel, executed
+        p.voted[msg.sender] = true; 					// Set this voter as having voted
+        p.numberOfVotes++; 						// Increase the number of votes
+        if (supportsContribution) { 					// If they support the proposal
+            p.currentResult++; 						// Increase score
+        } else { 							// If they don't
+            p.currentResult--; 						// Decrease the score
         }
         
         Voted(contributionNumber,  supportsContribution, msg.sender, justificationText);
@@ -233,11 +236,16 @@ contract Congress is owned, tokenRecipient {
 
 	function executeContribution(uint contributionNumber) onlyOwner {
         Contribution storage p = contributions[contributionNumber];
-        
+        /* Check if the contribution can be executed:
+           - Has it been already executed or is it being executed?
+           - Does the transaction code match the proposal?
+           - Has a minimum quorum?
+        */
 		require (!p.executed
               && p.contributionHash == sha3(p.recipient, p.amount)
               && p.numberOfVotes >= minimumQuorum);
-        
+        /* execute result */
+        /* If difference between support and opposition is larger than margin */
         if (p.currentResult > majorityMargin) {
 			if(p.tokenaddress==address(0)){
 				require(p.recipient.call.value(p.amount * 1 ether)());
@@ -250,7 +258,7 @@ contract Congress is owned, tokenRecipient {
         } else {
             p.contributionPassed = false;
         }
-       
+       // Fire Events
         ContributionTallied(contributionNumber, p.currentResult, p.numberOfVotes, p.contributionPassed);
     }
 }
