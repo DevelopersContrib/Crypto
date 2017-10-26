@@ -1,6 +1,5 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.13;
 
-import "ownable.sol";
 
 contract ERC20Basic {
   uint public totalSupply;
