@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "./ctbownable.sol";
-import "./contractmanager.sol";
+import "./ctbcontractmanager.sol";
 import "./ctbmisc.sol";
 
 contract owned {
