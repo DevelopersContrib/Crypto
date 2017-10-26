@@ -1,0 +1,32 @@
+pragma solidity ^0.4.18;
+
+import "./ctbownable.sol";
+
+// Ownable sets the contract creator as Owner. Ownership can be transferred.
+contract ContractManager is Ownable {
+	mapping (string => address) contracts;
+
+	function addContract(string name, address contractAddress) internal onlyOwner {
+		require(contracts[name] == 0);
+
+		contracts[name] = contractAddress;
+	}
+
+	function removeContract(string name) internal onlyOwner {
+		require(contracts[name] != 0);
+
+		contracts[name] = 0;
+	}
+
+	function updateContract(string name, address contractAddress) internal onlyOwner {
+		require(contracts[name] != 0);
+
+		contracts[name] = contractAddress;
+	}
+
+	function getContract(string name) constant internal returns (address contractAddress){
+		require(contracts[name] != 0);
+
+		return contracts[name];
+	}
+}
