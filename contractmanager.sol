@@ -1,7 +1,7 @@
 pragma solidity ^0.4.13;
 
 //import dao contract here
-import "./helpers/Ownable.sol";
+import "Ownable.sol";
 
 // Ownable sets the contract creator as Owner. Ownership can be transferred.
 contract ContractManager is Ownable {
