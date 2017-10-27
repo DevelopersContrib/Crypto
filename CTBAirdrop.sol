@@ -8,7 +8,7 @@ pragma solidity ^0.4.18;
 contract Ownable {
   address public owner;
 
-  function Ownable() {
+  function Ownable() internal{
     owner = msg.sender;
   }
  
@@ -19,7 +19,7 @@ contract Ownable {
     _;
   }
  
-  function transferOwnership(address newOwner) onlyOwner {
+  function transferOwnership(address newOwner) public onlyOwner {
     if (newOwner != address(0)) {
       owner = newOwner;
     }
@@ -29,15 +29,15 @@ contract Ownable {
 
 contract ERC20Basic {
   uint public totalSupply;
-  function balanceOf(address who) constant returns (uint);
-  function transfer(address to, uint value);
+  function balanceOf(address who) constant public returns (uint);
+  function transfer(address to, uint value) public;
   event Transfer(address indexed from, address indexed to, uint value);
 }
  
 contract ERC20 is ERC20Basic {
-  function allowance(address owner, address spender) constant returns (uint);
-  function transferFrom(address from, address to, uint value);
-  function approve(address spender, uint value);
+  function allowance(address owner, address spender) constant public returns (uint);
+  function transferFrom(address from, address to, uint value) internal;
+  function approve(address spender, uint value) internal;
   event Approval(address indexed owner, address indexed spender, uint value);
 }
 
@@ -45,7 +45,7 @@ contract CTBAirdropper is Ownable {
 
     function multisend(address _tokenAddr, address[] dests, uint256[] values)
     onlyOwner
-    returns (uint256) {
+    internal returns (uint256) {
         uint256 i = 0;
         while (i < dests.length) {
            ERC20(_tokenAddr).transfer(dests[i], values[i]);
