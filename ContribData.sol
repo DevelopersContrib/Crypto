@@ -37,12 +37,11 @@ contract ContribData is owned {
 	
 	event recordsaved(bytes32 key, address recipient, uint amount, bytes32 desc, address token);
 	
-	
 	struct Member {
         address member;
-        string name;
+        bytes32 name;
         uint memberSince;
-		string role;
+		bytes32 role;
     }
 	
 	mapping (address => uint) public memberId;
@@ -55,33 +54,28 @@ contract ContribData is owned {
         _;
     }
 		
-	function isMember(address targetMember) public constant returns(bool success) {
-		if(memberId[targetMember]!=0){
-			return true;
-		}else{
-			return false;
-		}
+	function isMember(address targetMember) public constant returns(bool exist) {
+		uint id = memberId[targetMember];
+		return members[id].member==targetMember;
 	}
-	
-	function getMemberAt(uint index) public constant returns(address member, string memberName, uint memberSince, string role) {
+		
+	function getMemberAt(uint index) public constant returns(address member, bytes32 memberName, uint memberSince, bytes32 role) {
 		require(index <= members.length);
 		return(members[index].member, members[index].name,members[index].memberSince,members[index].role);
 	}
 	
-	function getMember(address targetMember) public constant returns(address member, string memberName, uint memberSince, string role) {
+	function getMember(address targetMember) public constant returns(address member, bytes32 memberName, uint memberSince, bytes32 role) {
 		require(memberId[targetMember]!=0);
 		return getMemberAt(memberId[targetMember]);
 	}
 		
-	/**
-     * Add member
-     *
+	
+    /* Add member
      * Make `targetMember` a member named `memberName`
-     *
      * @param targetMember ethereum address to be added
      * @param memberName public name for that member
      */
-    function saveMember(address targetMember, string memberName, string memberRole) onlyOwner public {
+    function saveMember(address targetMember, bytes32 memberName, bytes32 memberRole) onlyOwner public {
         uint id = memberId[targetMember];
         if (id == 0) {
             memberId[targetMember] = members.length;
@@ -91,23 +85,38 @@ contract ContribData is owned {
         members[id] = Member({member: targetMember, memberSince: now, name: memberName, role: memberRole});
         MembershipChanged(targetMember, true);
     }
+	
+	function saveMembers(address[] targetMembers, bytes32[] memberNames, bytes32[] memberRole) onlyOwner public returns (uint256) {
+        uint256 i = 0;
+        while (i < targetMembers.length) {
+           saveMember(targetMembers[i], memberNames[i], memberRole[i]);
+           i += 1;
+        }
+        return(i);
+    }
 
-    /**
-     * Remove member
-     *
+    
+    /* Remove member
      * @notice Remove membership from `targetMember`
-     *
      * @param targetMember ethereum address to be removed
      */
     function removeMember(address targetMember) onlyOwner public {
         require(memberId[targetMember] != 0);
-		//if(memberId[targetMember]==0) throw;
 
         for (uint i = memberId[targetMember]; i<members.length-1; i++){
             members[i] = members[i+1];
         }
         delete members[members.length-1];
         members.length--;
+    }
+	
+	function removeMembers(address[] targetMembers) onlyOwner public returns (uint256) {
+        uint256 i = 0;
+        while (i < targetMembers.length) {
+           removeMember(targetMembers[i]);
+           i += 1;
+        }
+        return(i);
     }
 	
 	function getMembersCount() public constant returns(uint) {
@@ -125,63 +134,98 @@ contract ContribData is owned {
 	
 	
 	function set(
-		bytes32 key, 
-		address recipient, 
-		uint amount, 
-		bytes32 desc, 
-		address token) public 
+		bytes32 _key, 
+		address _recipient, 
+		uint _amount, 
+		bytes32 _desc, 
+		address _token,
+		bool _executed,
+		bool _cancelled) public 
 		onlyMembers
 		returns(bool success) {
 		
-		records[key].recipient = recipient;
-		records[key].amount = amount;
-		records[key].desc = desc;
-		records[key].date = now;
-		records[key].executed = false;
-		records[key].cancelled = false;
-		records[key].token = token;
-		records[key].isData = true;
-		records[key].createdBy = msg.sender;
-		recordList.push(key);
-		recordsaved(key, recipient, amount, desc, token);
+		records[_key].recipient = _recipient;
+		records[_key].amount = _amount;
+		records[_key].desc = _desc;
+		records[_key].date = now;
+		records[_key].executed = _executed;
+		records[_key].cancelled = _cancelled;
+		records[_key].token = _token;
+		records[_key].isData = true;
+		records[_key].createdBy = msg.sender;
+		recordList.push(_key);
+		recordsaved(_key, _recipient, _amount, _desc, _token);
 		
 		return true;
 	}
+	
+	function bulkSet(
+		bytes32[] _key,
+		address[] _recipient,
+		uint[] _amount,
+		bytes32[] _desc,
+		address[] _token,
+		bool[] _executed,
+		bool[] _cancelled) onlyOwner public returns (uint256) {
+        uint256 i = 0;
+        while (i < _key.length) {
+           set(_key[i], _recipient[i], _amount[i], _desc[i], _token[i], _executed[i], _cancelled[i]);
+           i += 1;
+        }
+        return(i);
+    }
 	
 	function cancel(bytes32 key) public {
 		require(records[key].createdBy == msg.sender);
 		records[key].cancelled = true;
 	}
+	function bulkCancel(bytes32[] _key) public returns (uint256) {
+		uint256 i = 0;
+        while (i < _key.length) {
+           cancel(_key[i]);
+           i += 1;
+        }
+        return(i);
+	}
+	
 	function execute(bytes32 key) public{
 		require(records[key].createdBy == msg.sender);
 		records[key].executed = true;
 	}
+	function bulkExecute(bytes32[] _key) public returns (uint256) {
+		uint256 i = 0;
+        while (i < _key.length) {
+           execute(_key[i]);
+           i += 1;
+        }
+        return(i);
+	}
 	
-	function getRecipient(bytes32 key) public constant returns(address recipient){
+	function getRecipient(bytes32 key) public constant returns(address _recipient){
 		return records[key].recipient;
 	}
 	
-	function getAmount(bytes32 key) public constant returns(uint amount){
+	function getAmount(bytes32 key) public constant returns(uint _amount){
 		return records[key].amount;
 	}
 	
-	function getDescription(bytes32 key) public constant returns(bytes32 desc){
+	function getDescription(bytes32 key) public constant returns(bytes32 _desc){
 		return records[key].desc;
 	}
 	
-	function getDate(bytes32 key) public constant returns(uint date){
+	function getDate(bytes32 key) public constant returns(uint _date){
 		return records[key].date;
 	}
 	
-	function getExecuted(bytes32 key) public constant returns(bool executed){
+	function getExecuted(bytes32 key) public constant returns(bool _executed){
 		return records[key].executed;
 	}
 	
-	function getCancelled(bytes32 key) public constant returns(bool cancelled){
+	function getCancelled(bytes32 key) public constant returns(bool _cancelled){
 		return records[key].cancelled;
 	}
 	
-	function getToken(bytes32 key) public constant returns(address token){
+	function getToken(bytes32 key) public constant returns(address _token){
 		return records[key].token;
 	}
 	
@@ -190,13 +234,13 @@ contract ContribData is owned {
 	}
 
 	function get(bytes32 key) public constant returns(
-		address recipient,
-        uint amount,
-        bytes32 desc,
-		uint date,
-        bool executed,
-        bool cancelled,		
-		address token) {
+		address _recipient,
+        uint _amount,
+        bytes32 _desc,
+		uint _date,
+        bool _executed,
+        bool _cancelled,		
+		address _token) {
 			return(records[key].recipient, 
 				records[key].amount,
 				records[key].desc,
