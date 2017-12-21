@@ -126,7 +126,7 @@ contract ContribData is owned {
 	function ContribData(string _name) public {
 		name = _name;
 		
-		// It’s necessary to add an empty first member
+		// It?s necessary to add an empty first member
         saveMember(0, "", "");
         // and let's add the founder, to save a step later
         saveMember(owner, 'founder', 'founder');
