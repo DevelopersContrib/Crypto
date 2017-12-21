@@ -1,252 +1,154 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.18;
+contract owned {
+    address public owner;
 
-import "ownable.sol";
-import "airdrop.sol";
-import "contractmanager.sol";
-
-contract tokenRecipient { 
-    event receivedEther(address sender, uint amount);
-    event receivedTokens(address _from, uint256 _value, address _token, bytes _extraData);
-
-    function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData){
-        Token t = Token(_token);
-        require (!t.transferFrom(_from, this, _value));
-        receivedTokens(_from, _value, _token, _extraData);
-    }
-
-    function () payable {
-        receivedEther(msg.sender, msg.value);
-    }
-}
-
-contract Token {
-    function transferFrom(address _from, address _to, uint256 _value) returns (bool success);
-	function transfer(address receiver, uint amount){
-		receiver = receiver;
-		amount = amount;		
-	}
-}
-
-contract Congress is owned, tokenRecipient {
-/* Contract Variables and events */
-	string public name;
-    uint public minimumQuorum;
-    int public majorityMargin;
-    Contribution[] public contributions;
-    uint public numContributions;
-    mapping (address => uint) public memberId;
-    Member[] public members;
-
-    event ContributionAdded(uint contributionID, address recipient, uint amount, string description, address tokenaddress);
-    event Voted(uint contributionID, bool position, address voter, string justification);
-    event ContributionTallied(uint contributionID, int result, uint quorum, bool active);
-    event MembershipChanged(address member, bool isMember);
-    event ChangeOfRules(uint newMinimumQuorum, int newMajorityMargin);
-	
-		
-    struct Contribution {
-        address recipient;
-        uint amount;
-        string description;
-        uint dateCreated;
-        bool executed;
-        bool contributionPassed;
-        uint numberOfVotes;
-        int currentResult;
-        bytes32 contributionHash;
-		address createdBy;
-		address tokenaddress;
-        Vote[] votes;
-        mapping (address => bool) voted;
-    }
-
-    struct Member {
-        address member;
-        string name;
-        uint memberSince;
-		string role;
-		bool canVote;
-    }
-
-    struct Vote {
-        bool inSupport;
-        address voter;
-        string justification;
+    function owned() public{
+        owner = msg.sender;
     }
 
     modifier onlyOwner {
 		require (msg.sender == owner);
 		_;
 	}
-	/* modifier that allows only shareholders to vote and create new contribution */
-	modifier onlyMembers {
-        require(memberId[msg.sender] != 0);
-        _;
+
+    function transferOwnership(address newOwner) public onlyOwner {
+        owner = newOwner;
     }
+}
+
+contract tokenRecipient {
+    event receivedEther(address sender, uint amount);
+    event receivedTokens(address _from, uint256 _value, address _token, bytes _extraData);
+
+    function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData) public{
+        Token t = Token(_token);
+        require (t.transferFrom(_from, this, _value));
+        receivedTokens(_from, _value, _token, _extraData);
+    }
+
+    function () payable public {
+        receivedEther(msg.sender, msg.value);
+    }
+}
+
+contract Token {
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
+	function transfer(address receiver, uint amount) public pure {
+		receiver = receiver;
+		amount = amount;		
+	}
+}
+
+contract ContribData{
+	function set(bytes32 key, address recipient, uint amount, bytes32 desc, address token, bool executed, bool cancelled) public pure returns(bool success) {
+	}
+	
+	function execute(bytes32 key) public pure{
+		key = key;
+	}
+	function cancel(bytes32 key) public pure{
+		key = key;
+	}
+
+	function isData(bytes32 key) public  returns(bool yes) {
+	}
+	
+	function getRecipient(bytes32 key) public  returns(address _recipient){
+	}
+	function getAmount(bytes32 key) public  returns(uint _amount){
+	}
+
+	function getExecuted(bytes32 key) public  returns(bool _executed){
+	}
+	function getCancelled(bytes32 key) public  returns(bool _cancelled){
+	}
+	function getToken(bytes32 key) public  returns(address _token){
+	}
+	
+	function isMember(address targetMember) public  returns(bool _success) {
+	}
+}
+
+contract ContribDao is owned, tokenRecipient {
+/* Contract Variables and events */
+	string public name;
+	ContribData private contribData;
+	address public addressOfContribData;
+	
+    event ContributionAdded(bytes32 key, address recipient, uint amount, bytes32 desc, address token);
+    event ContributionTallied(bytes32 key);
+	
 /* First time setup */
-    function Congress(
+    function ContribDao(
 		string brandname,
-        uint minimumQuorumForContributions,
-        int marginOfVotesForMajority, address congressLeader
+		address _addressOfContribData
 		
-    ) payable {
+    ) payable public {
 		name = brandname;
-        changeVotingRules(minimumQuorumForContributions, marginOfVotesForMajority);
-        if (congressLeader != 0) owner = congressLeader;
-	// It’s necessary to add an empty first member
-        addMember(0, '', '', false); 
-	// and let's add the founder, to save a step later 
-        addMember(owner, 'founder', 'founder',true);
-    }
-/*make member*/
-	function addMember(address targetMember, string memberName, string memberRole, bool memberCanVote) onlyOwner {
-		uint id;
-		if (memberId[targetMember] == 0) {
-			memberId[targetMember] = members.length;
-			id = members.length++;
-			members[id] = Member({member: targetMember, memberSince: now, name: memberName, role: memberRole, canVote: memberCanVote});
-			MembershipChanged(targetMember, true);
-		}
-	}
-	 /*update member*/
-	function updateMember(address targetMember, string memberName, string memberRole, bool memberCanVote) onlyOwner{
-		if (memberId[targetMember] != 0) {
-			uint id = memberId[targetMember];
-            Member storage m = members[id];
-			m.name = memberName;
-			m.role = memberRole;
-			m.canVote = memberCanVote;
-			MembershipChanged(targetMember, true);
-		}
-	}
- /*remove member*/
-    function removeMember(address targetMember) onlyOwner {
-        require (memberId[targetMember] != 0);
-		
-        for (uint i = memberId[targetMember]; i<members.length-1; i++){
-            members[i] = members[i+1];
-        }
-        delete members[members.length-1];
-        members.length--;
+		UpdateContribData(_addressOfContribData);
     }
 	
-	function getMembersCount() public constant returns(uint) {
-        return members.length;
-    }
- /*change rules*/
-    function changeVotingRules(
-        uint minimumQuorumForContributions_,
-        int marginOfVotesForMajority_
-    ) onlyOwner {
-        minimumQuorum = minimumQuorumForContributions_;
-        majorityMargin = marginOfVotesForMajority_;
-
-        ChangeOfRules(minimumQuorum, majorityMargin);
-    }
+	function UpdateContribData(address _addressOfContribData) public{
+		addressOfContribData = _addressOfContribData;
+		contribData = ContribData(addressOfContribData);
+	}
+		
 /* Function to create a new contribution */
-    function newContribution(
+    function create(
+		bytes32 key,
         address beneficiary,
         uint amount,
-        string JobDescription,
-		address Tokenaddress
+        bytes32 desc,
+		address tokenAddress
     )
-        onlyMembers
-        returns (uint contributionID)
-    {
-		require (memberId[beneficiary] != 0);
-		
-        contributionID = contributions.length++;
-        Contribution storage p = contributions[contributionID];
-        p.recipient = beneficiary;		
-        p.amount = amount;
-        p.description = JobDescription;
-		p.contributionHash = sha3(beneficiary, amount);
-        p.dateCreated = now;
-        p.executed = false;
-        p.contributionPassed = false;
-		
-		if(msg.sender != owner){
-			p.numberOfVotes = 0;
-		}else{
-			p.voted[msg.sender] = true;
-			p.numberOfVotes++;
-			p.currentResult++;
-		}
-        
-		p.createdBy = msg.sender;
-		p.tokenaddress = Tokenaddress;
-        ContributionAdded(contributionID, beneficiary, amount, JobDescription, Tokenaddress);
-        numContributions = contributionID+1;
+		public onlyOwner
+        returns (bool success)
+    {	
+		require(contribData.isMember(beneficiary) && !contribData.isData(key));
 
-        return contributionID;
+		contribData.set(key, beneficiary, amount, desc, tokenAddress, false, false);
+		
+		ContributionAdded(key, beneficiary, amount, desc, tokenAddress);
+        return true;
     }
 	
-	function getContributionCount() public constant returns(uint) {
-        return contributions.length;
-    }
-/* function to check if a contribution code matches */
-    function checkContributionCode(
-        uint contributionNumber,
-        address beneficiary,
-        uint amount
-    )
-        constant
-        returns (bool codeChecksOut)
-    {
-        Contribution storage p = contributions[contributionNumber];
-		return p.contributionHash == sha3(beneficiary, amount);
-    }
-
-    function vote(
-        uint contributionNumber,
-        bool supportsContribution,
-        string justificationText
-    )
-        onlyMembers
-        returns (uint voteID)
-    {
-		uint id = memberId[msg.sender];
-		require(members[id].canVote);
+	function execute(bytes32 key) public onlyOwner returns (bool success){
+        require(contribData.isData(key) && contribData.isMember(contribData.getRecipient(key)));
 		
-        Contribution storage p = contributions[contributionNumber]; 	// Get the contribution
-        require (!p.voted[msg.sender] && !p.executed); 			// If has already voted, cancel, executed
-        p.voted[msg.sender] = true; 					// Set this voter as having voted
-        p.numberOfVotes++; 						// Increase the number of votes
-        if (supportsContribution) { 					// If they support the proposal
-            p.currentResult++; 						// Increase score
-        } else { 							// If they don't
-            p.currentResult--; 						// Decrease the score
-        }
-        
-        Voted(contributionNumber,  supportsContribution, msg.sender, justificationText);
-        return p.numberOfVotes;
+		require(!contribData.getExecuted(key) && !contribData.getCancelled(key));
+       
+		if(contribData.getToken(key)==address(0)){
+			require(contribData.getRecipient(key).call.value(contribData.getAmount(key) * 1 ether)());
+			
+		}else{
+			Token t = Token(contribData.getToken(key)); 
+			t.transfer(contribData.getRecipient(key), contribData.getAmount(key));
+		}
+		
+		contribData.execute(key);
+		// Fire Events
+		ContributionTallied(key);
+		return true;
     }
-
-	function executeContribution(uint contributionNumber) onlyOwner {
-        Contribution storage p = contributions[contributionNumber];
-        /* Check if the contribution can be executed:
-           - Has it been already executed or is it being executed?
-           - Does the transaction code match the proposal?
-           - Has a minimum quorum?
-        */
-		require (!p.executed
-              && p.contributionHash == sha3(p.recipient, p.amount)
-              && p.numberOfVotes >= minimumQuorum);
-        /* execute result */
-        /* If difference between support and opposition is larger than margin */
-        if (p.currentResult > majorityMargin) {
-			if(p.tokenaddress==address(0)){
-				require(p.recipient.call.value(p.amount * 1 ether)());
-			}else{
-				Token t = Token(p.tokenaddress); 
-				t.transfer(p.recipient, p.amount);
-			}
-			p.executed = true;
-            p.contributionPassed = true;
-        } else {
-            p.contributionPassed = false;
-        }
-       // Fire Events
-        ContributionTallied(contributionNumber, p.currentResult, p.numberOfVotes, p.contributionPassed);
-    }
+	
+	function createExecute(
+		bytes32 key,
+        address beneficiary,
+        uint amount,
+        bytes32 desc,
+		address tokenAddress
+    )
+		public onlyOwner
+        returns (bool success)
+    {	
+		if(create(key, beneficiary, amount, desc, tokenAddress))
+			execute(key);
+		return true;
+	}
+	
+	function cancel(bytes32 key) public onlyOwner {
+		require(contribData.isData(key));
+	
+		contribData.cancel(key);
+	}
 }
