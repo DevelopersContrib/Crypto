@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.18;
 
 contract owned {
     address public owner;
@@ -170,7 +170,7 @@ contract TokenERC20 {
 }
 
 /******************************************/
-/*       CTB TOKEN STARTS HERE       */
+/*       CTB TOKEN STARTS HERE  - V2 TOKEN 2018      */
 /******************************************/
 
 contract CTB is owned, TokenERC20 {
