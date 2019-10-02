@@ -16,7 +16,7 @@ contract owned {
         owner = newOwner;
     }
 }
-						   
+
 interface tokenRecipient { function receiveApproval(address _from, uint256 _value, address _token, bytes calldata _extraData) external; }
 
 contract TokenERC20 {
@@ -151,7 +151,7 @@ contract TokenERC20 {
         require(balanceOf[msg.sender] >= _value);   // Check if the sender has enough
         balanceOf[msg.sender] -= _value;            // Subtract from the sender
         totalSupply -= _value;                      // Updates totalSupply
-        emit Burn(msg.sender, _value);
+        //emit Burn(msg.sender, _value);
         return true;
     }
 
@@ -175,7 +175,7 @@ contract TokenERC20 {
 }
 
 /******************************************/
-/*       ContribToken TOKEN STARTS HERE      */
+/*       CONTRIB TOKEN STARTS HERE       */
 /******************************************/
 
 contract ContribToken is owned, TokenERC20 {
