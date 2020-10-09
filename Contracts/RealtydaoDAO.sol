@@ -117,10 +117,10 @@ contract ContribData{
 	function set(bytes32 key, address recipient, uint amount, bytes32 desc, address token, bool executed, bool cancelled) public returns(bool success) {
 	}
 	
-	function execute(bytes32 key) public {
+	function execute(bytes32 key) public pure  {
 		key = key;
 	}
-	function cancel(bytes32 key) public{
+	function cancel(bytes32 key) public pure  {
 		key = key;
 	}
 
@@ -192,7 +192,7 @@ contract ContribDao is owned, tokenRecipient {
 		require(!contribData.getExecuted(key) && !contribData.getCancelled(key));
        
 		if(contribData.getToken(key)==address(0)){
-            (bool reward, ) = address(contribData.getRecipient(key)).call.value(contribData.getAmount(key) * 1 ether)("f");
+            (bool reward, ) = address(contribData.getRecipient(key)).call{value:contribData.getAmount(key) * 1 ether}("f");
             
 			require(reward);
 		}else{
