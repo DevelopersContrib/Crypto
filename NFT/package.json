@@ -1,0 +1,18 @@
+{
+  "name": "MyERC721",
+  "version": "1.0.0",
+  "description": "https://forum.openzeppelin.com/t/openzeppelin-contracts-v3-0-final-release-candidate/2583/2\r $ npm init -y",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "truffle": "^5.1.67"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.4.0"
+  }
+}
