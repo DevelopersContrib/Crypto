@@ -1,0 +1,90 @@
+https://ethereum.stackexchange.com/questions/38537/how-to-factor-in-decimals-when-using-division-and-remainders/38546
+
+RDAO = 0x7937696ba41015a910ffd25d2580f0bd9403ad58
+ESH = 0x97c29e16E2795c7e4877Fcf41d7Cb0Af3791D27c
+
+Exchange = 0x6C7A2250bd37bD08e1d1D20663d7c3cdC5e0780D
+
+ESH = 1
+RDAO = 1
+
+rate = 1
+
+RDAO / ESH = tokens
+1 / 1 = 1
+
+ESH = .5
+RDAO = 1
+1 / .5 = 2esh
+
+rdao = await rDAO.deployed()
+exchange = await Exchange.deployed()
+esh = await EshToken.deployed()
+
+
+await exchange.create(101,'1000000000000000000',esh.address)
+await exchange.create(101,'500000000000000000',esh.address)
+await exchange.create(101,'1000000000000000000','0x97c29e16E2795c7e4877Fcf41d7Cb0Af3791D27c')
+await exchange.create(47,'500000000000000000','0x97c29e16E2795c7e4877Fcf41d7Cb0Af3791D27c')
+
+await exchange.create(47,'500000000000000000',esh.address)
+
+//send 200 esh to exchange contract
+esh.transfer(exchange.address, '200000000000000000000',{from:accounts[0]})
+ex = await esh.balanceOf(exchange.address)
+web3.utils.fromWei(ex,'ether')
+200
+//send 200 rdao to user
+rdao.transfer(accounts[1], '200000000000000000000',{from:accounts[0]})
+t1 = await rdao.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+200
+
+set 10 allowance
+await rdao.increaseAllowance(exchange.address, '10000000000000000000', { from: accounts[1] })
+await rdao.increaseAllowance(exchange.address, '10000000000000000000')
+
+before exchange check sa available allowance first!
+echange 1 rdao to esh
+await exchange.enter(101,'1000000000000000000',{from:accounts[1]})
+
+await exchange.enter(101,'2000000000000000000')
+71.4
+
+await exchange.enter(101,'2613058035714285854', { from: accounts[1] })
+
+
+t1 = await esh.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+3
+
+t1 = await rdao.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+197
+
+await exchange.getEshToken(101)
+(await exchange.getRate(101)).toString()
+
+total = await exchange.getRDAO(101)
+web3.utils.fromWei(total,'ether')
+
+set .5 rate so 1rdao = 2esh 
+await exchange.setRate(101,'500000000000000000')
+
+send 1 rdao
+await exchange.enter(101,'1000000000000000000',{from:accounts[1]})
+
+t1 = await esh.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+
+t1 = await rdao.balanceOf(exchange.address)
+web3.utils.fromWei(t1,'ether')
+
+total = await exchange.lastEx()
+web3.utils.fromWei(total,'ether')
+
+(await exchange.getDomains()).toString()
+
+(await exchange.getA()).toString()
+(await exchange.getB()).toString()
+(await exchange.getRate(47)).toString()
