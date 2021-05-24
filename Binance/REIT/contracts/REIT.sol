@@ -31,7 +31,7 @@ contract REIT is Initializable, ContextUpgradeable, AccessControlUpgradeable, ER
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     /**
-     * @dev Initialize the token name and symbol. Mint 10 billion COOK token to `initialTokenHolder`.
+     * @dev Initialize the token name and symbol. Mint 10 billion REIT token to `initialTokenHolder`.
      */
     function initialize(address initialTokenHolder) external initializer {
         __ERC20PresetMinterPauser_init("REIT", "REIT");
@@ -72,7 +72,7 @@ contract REIT is Initializable, ContextUpgradeable, AccessControlUpgradeable, ER
      * - the caller must have the `MINTER_ROLE`.
      */
     function mint(address to, uint256 amount) external {
-        require(hasRole(MINTER_ROLE, _msgSender()), "CookToken: must have minter role to mint");
+        require(hasRole(MINTER_ROLE, _msgSender()), "REIT: must have minter role to mint");
         _mint(to, amount);
     }
 
@@ -86,7 +86,7 @@ contract REIT is Initializable, ContextUpgradeable, AccessControlUpgradeable, ER
      * - the caller must have the `PAUSER_ROLE`.
      */
     function pause() external {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "CookToken: must have pauser role to pause");
+        require(hasRole(PAUSER_ROLE, _msgSender()), "REIT: must have pauser role to pause");
         _pause();
     }
 
@@ -100,7 +100,7 @@ contract REIT is Initializable, ContextUpgradeable, AccessControlUpgradeable, ER
      * - the caller must have the `PAUSER_ROLE`.
      */
     function unpause() external {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "CookToken: must have pauser role to unpause");
+        require(hasRole(PAUSER_ROLE, _msgSender()), "REIT: must have pauser role to unpause");
         _unpause();
     }
 
