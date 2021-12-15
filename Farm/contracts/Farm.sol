@@ -1,12 +1,13 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Farm {
+contract Farm is Ownable{
 
     mapping(address => uint256) public stakingBalance;
     mapping(address => bool) public isStaking;
-    mapping(address => uint256) public startTime;
+    mapping(address => uint256) public userStartBlock;
     mapping(address => uint256) public totalUserRewards;
 
     IERC20 public ctbToken;
@@ -15,6 +16,9 @@ contract Farm {
 	uint256 public rewardPerBlock;
 	uint256 public totalPool;
 	
+	uint256 public startBlock;
+    uint256 public endBlock;
+	
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
     event YieldWithdraw(address indexed to, uint256 amount);
@@ -22,14 +26,25 @@ contract Farm {
     constructor(
         IERC20 _ctbToken,
         IERC20 _tokenReward,
-		uint256 reward_per_block
+		uint256 _reward_per_block,
+		uint256 _startBlock,
+		uint256 _endBlock
         ) {
             ctbToken = _ctbToken;
             tokenReward = _tokenReward;
-			rewardPerBlock = reward_per_block;
+			rewardPerBlock = _reward_per_block;
+			
+			startBlock = _startBlock;
+			endBlock = _endBlock;
         }
-
+	
+	function setEndBlock(uint256 _endBlock) public onlyOwner {
+		endBlock = _endBlock;
+	}
+	
     function stake(uint256 amount) public {
+		require(startBlock < block.number, "NOT_START");
+		require(endBlock > block.number, "ALREADY_CLOSE");
         require(
             amount > 0 &&
             ctbToken.balanceOf(msg.sender) >= amount, 
@@ -44,7 +59,7 @@ contract Farm {
 
         ctbToken.transferFrom(msg.sender, address(this), amount);
         stakingBalance[msg.sender] += amount;
-        startTime[msg.sender] = block.number;
+        userStartBlock[msg.sender] = block.number;
         isStaking[msg.sender] = true;
         emit Stake(msg.sender, amount);
     }
@@ -59,7 +74,7 @@ contract Farm {
 		totalPool -= amount;
 		
         uint256 yieldTransfer = calculateYieldTotal(msg.sender);
-        startTime[msg.sender] = block.number;
+        userStartBlock[msg.sender] = block.number;
         uint256 balTransfer = amount;
         amount = 0;
         stakingBalance[msg.sender] -= balTransfer;
@@ -74,17 +89,20 @@ contract Farm {
     }
 	
 	function userStart(address user) public view returns(uint256){
-        return startTime[user];
+        return userStartBlock[user];
     }
 	
 	function currBlock() public view returns(uint256){
-        uint256 end = block.number;
-		return end;
+        return block.number;
     }
 	
     function calculateYieldBlocks(address user) public view returns(uint256){
         uint256 end = block.number;
-        uint256 totalTime = end - startTime[user];
+		
+		if(block.number > endBlock){
+			end = endBlock;
+		}
+        uint256 totalTime = end - userStartBlock[user];
         return totalTime;
     }
 	
@@ -110,15 +128,16 @@ contract Farm {
     function withdrawYield() public {
         uint256 toTransfer = calculateYieldTotal(msg.sender);
 		
-		require(stakingBalance[msg.sender] && isStaking[msg.sender],"Nothing to withdraw");
-		   
+		require(isStaking[msg.sender],"No_Stake ");
+		require(stakingBalance[msg.sender]>0,"Nothing_to_withdraw");
+		
         if(totalUserRewards[msg.sender] != 0){
             uint256 oldBalance = totalUserRewards[msg.sender];
             totalUserRewards[msg.sender] = 0;
             toTransfer += oldBalance;
         }
 
-        startTime[msg.sender] = block.number;
+        userStartBlock[msg.sender] = block.number;
         tokenReward.transfer(msg.sender, toTransfer);
         emit YieldWithdraw(msg.sender, toTransfer);
     }
@@ -133,4 +152,8 @@ contract Farm {
 		
 		return toTransfer;
     }
+	
+	function withdrawLeftOver(uint256 amount, address token, address to) public onlyOwner {
+		IERC20(token).transfer(to, amount);
+	}
 }
