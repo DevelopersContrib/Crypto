@@ -15,6 +15,7 @@ contract Farm is Ownable{
 	
 	uint256 public rewardPerBlock;
 	uint256 public totalPool;
+	uint256 public totalUnstake;
 	
 	uint256 public startBlock;
     uint256 public endBlock;
@@ -66,12 +67,12 @@ contract Farm is Ownable{
 
     function unstake(uint256 amount) public {
         require(
-            isStaking[msg.sender] = true &&
+            isStaking[msg.sender] == true &&
             stakingBalance[msg.sender] >= amount, 
             "Nothing to unstake"
         );
 		
-		totalPool -= amount;
+		totalUnstake += amount;
 		
         uint256 yieldTransfer = calculateYieldTotal(msg.sender);
         userStartBlock[msg.sender] = block.number;
@@ -88,8 +89,13 @@ contract Farm is Ownable{
         emit Unstake(msg.sender, balTransfer);
     }
 	
+	
 	function userStart(address user) public view returns(uint256){
         return userStartBlock[user];
+    }
+	
+	function userBalance(address user) public view returns(uint256){
+        return stakingBalance[user];
     }
 	
 	function currBlock() public view returns(uint256){
@@ -99,11 +105,19 @@ contract Farm is Ownable{
     function calculateYieldBlocks(address user) public view returns(uint256){
         uint256 end = block.number;
 		
-		if(block.number > endBlock){
+		if(end > endBlock){
 			end = endBlock;
 		}
-        uint256 totalTime = end - userStartBlock[user];
-        return totalTime;
+		
+		uint256 total = 0;
+		
+		if(userStartBlock[user]>end){
+			total = 0;
+		}else{
+			total = end - userStartBlock[user];
+		}
+        
+        return total;
     }
 	
 	function calculateRatio(address user) public view returns(uint256){
@@ -141,18 +155,7 @@ contract Farm is Ownable{
         tokenReward.transfer(msg.sender, toTransfer);
         emit YieldWithdraw(msg.sender, toTransfer);
     }
-	
-	function checkYield() public view returns(uint256) {
-        uint256 toTransfer = calculateYieldTotal(msg.sender);
 		
-        if(totalUserRewards[msg.sender] != 0){
-            uint256 oldBalance = totalUserRewards[msg.sender];
-            toTransfer += oldBalance;
-        }
-		
-		return toTransfer;
-    }
-	
 	function withdrawLeftOver(uint256 amount, address token, address to) public onlyOwner {
 		IERC20(token).transfer(to, amount);
 	}
