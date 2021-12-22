@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Farm is Ownable{
 
-    mapping(address => uint256) public stakingBalance;
-    mapping(address => bool) public isStaking;
-    mapping(address => uint256) public userStartBlock;
-    mapping(address => uint256) public totalUserRewards;
+    mapping(address => uint256) private stakingBalance;
+    mapping(address => bool) private onStake;
+    mapping(address => uint256) private userStartBlock;
+    mapping(address => uint256) private totalUserRewards;
 
     IERC20 public ctbToken;
     IERC20 public tokenReward;
@@ -51,7 +51,7 @@ contract Farm is Ownable{
             ctbToken.balanceOf(msg.sender) >= amount, 
             "You cannot stake zero tokens");
             
-        if(isStaking[msg.sender] == true){
+        if(onStake[msg.sender] == true){
             uint256 toTransfer = calculateYieldTotal(msg.sender);
             totalUserRewards[msg.sender] += toTransfer;
         }
@@ -61,18 +61,16 @@ contract Farm is Ownable{
         ctbToken.transferFrom(msg.sender, address(this), amount);
         stakingBalance[msg.sender] += amount;
         userStartBlock[msg.sender] = block.number;
-        isStaking[msg.sender] = true;
+        onStake[msg.sender] = true;
         emit Stake(msg.sender, amount);
     }
 
     function unstake(uint256 amount) public {
         require(
-            isStaking[msg.sender] == true &&
+            onStake[msg.sender] == true &&
             stakingBalance[msg.sender] >= amount, 
             "Nothing to unstake"
         );
-		
-		totalUnstake += amount;
 		
         uint256 yieldTransfer = calculateYieldTotal(msg.sender);
         userStartBlock[msg.sender] = block.number;
@@ -83,12 +81,27 @@ contract Farm is Ownable{
         totalUserRewards[msg.sender] += yieldTransfer;
 		
         if(stakingBalance[msg.sender] == 0){
-            isStaking[msg.sender] = false;
+            onStake[msg.sender] = false;
+			totalUserRewards[msg.sender] = 0;
+			tokenReward.transfer(msg.sender, yieldTransfer);
         }
 		
+		totalUnstake += balTransfer;
+		 
         emit Unstake(msg.sender, balTransfer);
     }
 	
+	function isStaking(address user) public view returns(bool){
+        return onStake[user];
+    }
+	
+	function balanceOf(address user) public view returns(uint256){
+        return stakingBalance[user];
+    }
+	
+	function totalRewards(address user) public view returns(uint256){
+        return totalUserRewards[user];
+    }
 	
 	function userStart(address user) public view returns(uint256){
         return userStartBlock[user];
@@ -103,31 +116,43 @@ contract Farm is Ownable{
     }
 	
     function calculateYieldBlocks(address user) public view returns(uint256){
-        uint256 end = block.number;
-		
-		if(end > endBlock){
-			end = endBlock;
-		}
-		
-		uint256 total = 0;
-		
-		if(userStartBlock[user]>end){
-			total = 0;
+		if(onStake[user]){
+			uint256 end = block.number;
+			
+			if(end > endBlock){
+				end = endBlock;
+			}
+			
+			uint256 total = 0;
+			
+			if(userStartBlock[user]>end){
+				total = 0;
+			}else{
+				total = end - userStartBlock[user];
+			}
+			
+			return total;
 		}else{
-			total = end - userStartBlock[user];
+			return 0;
 		}
-        
-        return total;
     }
 	
 	function calculateRatio(address user) public view returns(uint256){
-		uint256 stakeAmount = stakingBalance[user] * 10**18;
-		return stakeAmount / totalPool;
+		if(onStake[user]){
+			uint256 stakeAmount = stakingBalance[user] * 10**18;
+			return stakeAmount / (totalPool - totalUnstake);
+		}else{
+			return 0;
+		}
 	}
 	
 	function calculateRewardPerBlock(address user) public view returns(uint256){
-		uint256 ratio = calculateRatio(user);
-		return (ratio * rewardPerBlock) / (1  * 10**18 );
+		if(onStake[user]){
+			uint256 ratio = calculateRatio(user);
+			return (ratio * rewardPerBlock) / (1  * 10**18 );
+		}else{
+			return 0;
+		}
 	}
 
     function calculateYieldTotal(address user) public view returns(uint256) {
@@ -142,7 +167,7 @@ contract Farm is Ownable{
     function withdrawYield() public {
         uint256 toTransfer = calculateYieldTotal(msg.sender);
 		
-		require(isStaking[msg.sender],"No_Stake ");
+		require(onStake[msg.sender],"No_Stake ");
 		require(stakingBalance[msg.sender]>0,"Nothing_to_withdraw");
 		
         if(totalUserRewards[msg.sender] != 0){
