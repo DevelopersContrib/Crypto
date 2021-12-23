@@ -13,12 +13,12 @@ contract Farm is Ownable{
     IERC20 public ctbToken;
     IERC20 public tokenReward;
 	
-	uint256 public rewardPerBlock;
-	uint256 public totalPool;
-	uint256 public totalUnstake;
+	uint256 private rewardPerBlock;
+	uint256 private totalPool;
+	uint256 private totalUnstake;
 	
-	uint256 public startBlock;
-    uint256 public endBlock;
+	uint256 private startBlock;
+    uint256 private endBlock;
 	
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
@@ -39,9 +39,7 @@ contract Farm is Ownable{
 			endBlock = _endBlock;
         }
 	
-	function setEndBlock(uint256 _endBlock) public onlyOwner {
-		endBlock = _endBlock;
-	}
+	
 	
     function stake(uint256 amount) public {
 		require(startBlock < block.number, "NOT_START");
@@ -91,6 +89,26 @@ contract Farm is Ownable{
         emit Unstake(msg.sender, balTransfer);
     }
 	
+	function getEndBlock() public view returns(uint256){
+		return endBlock;
+	}
+	
+	function getStartBlock() public view returns(uint256){
+		return startBlock;
+	}
+	
+	function getTotalUnstake() public view returns(uint256){
+		return totalUnstake;
+	}
+	
+	function getTotalPool() public view returns(uint256){
+		return totalPool;
+	}
+	
+	function getRewardPerBlock() public view returns(uint256){
+		return rewardPerBlock;
+	}
+	
 	function isStaking(address user) public view returns(bool){
         return onStake[user];
     }
@@ -111,9 +129,9 @@ contract Farm is Ownable{
         return stakingBalance[user];
     }
 	
-	function currBlock() public view returns(uint256){
-        return block.number;
-    }
+	function setEndBlock(uint256 _endBlock) public onlyOwner {
+		endBlock = _endBlock;
+	}
 	
     function calculateYieldBlocks(address user) public view returns(uint256){
 		if(onStake[user]){
