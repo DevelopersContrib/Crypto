@@ -1,0 +1,328 @@
+https://ethereum.stackexchange.com/questions/38537/how-to-factor-in-decimals-when-using-division-and-remainders/38546
+npx truffle develop
+migrate
+
+REIT = 0x0d7C5c6775B55C84057A2E9cB01E6cbA3dB395DA
+ESH = 0x97c29e16E2795c7e4877Fcf41d7Cb0Af3791D27c
+
+Exchange = 0x0D486Ae9C4645530AF723d914178129686303018
+
+ESH = 1
+RDAO = 1
+
+rate = 1
+
+RDAO / ESH = tokens
+1 / 1 = 1
+
+ESH = .5
+RDAO = 1
+1 / .5 = 2esh
+
+esha = await Esha.deployed()
+eshb = await Eshb.deployed()
+ex = await Exchange.deployed()
+esh = await EshToken.deployed()
+rdao = await rDAO.deployed()
+
+b = await ex.gettokenbalance(esha.address,accounts[0])
+web3.utils.fromWei(b,'ether')
+
+await esha.increaseAllowance(ex.address, '1000000000000000000000000000')
+await eshb.increaseAllowance(ex.address, '1000000000000000000000000000')
+await ex.burntoken(esha.address)
+
+
+exbal = await esha.balanceOf(accounts[0])
+web3.utils.fromWei(exbal,'ether')
+exbal = await eshb.balanceOf(accounts[0])
+
+
+
+id: 197
+initprice: 0059999999999999998
+ethprice: 0002500000000000000
+base: 1000000
+6666
+web3.utils.fromWei('0059999999999999998','ether')
+web3.utils.fromWei('0002500000000000000','ether')
+
+create child dan
+await ex.create(197,'59999999999999998','2500000000000000',esh.address, 1000000,[esha.address,eshb.address])
+await ex.create(198,'59999999999999998','2500000000000000',esh.address, 1000000,[])
+
+(await ex.getRdaoPrice()).toString()
+rdaoPrice = await ex.rdaoPrice()
+web3.utils.fromWei(rdaoPrice,'ether')
+
+(await ex.getRate(197)).toString()
+(await ex.getRate(198)).toString()
+
+(await ex.price(197)).toString()
+eshPrice = await ex.price(197)
+web3.utils.fromWei(eshPrice,'ether')
+
+r = web3.utils.fromWei(rdaoPrice,'ether')
+e = web3.utils.fromWei(eshPrice,'ether')
+
+(await ex.computeByRateRate(197)).toString()
+
+(await ex.computeByPriceRate(197)).toString()
+(await ex.computeByRate(197,'1000000000000000000')).toString()
+
+(await ex.computeByPrice(197,'1000000000000000000')).toString()
+(await ex.computeByPrice(197,'1500000000000000000')).toString()
+(await ex.computeByPrice(197,1)).toString()
+
+web3.utils.fromWei('1140068860159153596','ether')
+
+web3.utils.fromWei('1710103290238730394000000000000000000','ether')
+web3.utils.toWei('1.5','ether')
+
+
+
+withdraw 1000 esh
+await esh.increaseAllowance(ex.address, '1000000000000000000000')
+await ex.withdraw(197,'1000000000000000000')
+(await ex.computeByPrice(197,'1000000000000000000')).toString()
+
+(await ex.computeByPrice(197,'2000000000000000000')).toString()
+
+await ex.create(1,'59999999999999998','2500000000000000',esh.address, 1000000,'2000000000000000000',{from:accounts[1]})
+error
+
+await ex.getList()
+await ex.isCreator(accounts[1])
+await ex.addCreator(accounts[1])
+await ex.removeCreator(accounts[1])
+
+//send 100 rdao to user
+rdao.transfer(accounts[1], '100000000000000000000')
+
+set 2 rdao allowance
+await rdao.increaseAllowance(ex.address, '2000000000000000000', { from: accounts[1] })
+
+send 2 rdao to create 
+await ex.create(1,'59999999999999998','2500000000000000',esh.address, 1000000,'2000000000000000000',{from:accounts[1]})
+
+(await ex.getRate(1)).toString()
+(await ex.price(1)).toString()
+
+
+
+//send 200000 esh to exchange contract
+esh.transfer(ex.address, '200000000000000000000000',{from:accounts[0]})
+exbal = await esh.balanceOf(ex.address)
+web3.utils.fromWei(exbal,'ether')
+200000
+
+exbal = await esh.balanceOf(accounts[0])
+
+//send 100 rdao to user
+rdao.transfer(accounts[1], '100000000000000000000')
+
+set 1 allowance
+await rdao.increaseAllowance(ex.address, '1000000000000000000', { from: accounts[1] })
+
+await rdao.increaseAllowance(ex.address, '5000000000000000000')
+
+user buy esh worth 1rdao
+await ex.enter(197,'1000000000000000000',{from:accounts[1]})
+await ex.enter(197,'1000000000000000000',accounts[0])
+
+t1 = await esh.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+6666
+
+r1 = await rdao.balanceOf(accounts[0])
+r1 = await rdao.balanceOf(ex.address)
+web3.utils.fromWei(r1,'ether')
+
+r1 = await rdao.balanceOf(accounts[1])
+web3.utils.fromWei(r1,'ether')
+99
+
+exbal = await esh.balanceOf(ex.address)
+web3.utils.fromWei(exbal,'ether')
+193334
+
+e1 = await rdao.balanceOf(ex.address)
+web3.utils.fromWei(e1,'ether')
+3
+
+check owner rdao balance
+owner = await rdao.balanceOf(accounts[9])
+web3.utils.fromWei(owner,'ether')
+
+(await ex.getOwnerRDAOAmount(197)).toString()
+
+await ex.sendRDAOtoOwner(197,accounts[9])
+
+
+check owner rdao balance
+owner = await rdao.balanceOf(accounts[9])
+web3.utils.fromWei(owner,'ether')
+
+
+
+
+
+
+
+
+
+
+id: 1408
+initprice: 0002800000000000000
+ethprice: 0420399999999999996
+base: 1000000
+
+ESH Price: 0.42035700
+BNB Price: 0.002494
+
+
+INITIAL ESH PRICE: 0.42035700
+BNB PRICE IN 1 USD: 0.002494
+
+
+INITIAL ESH PRICE: 0.06
+BNB PRICE IN 1 USD: 0.0025
+
+id: 197
+initprice: 0059999999999999998
+ethprice: 0002500000000000000
+base: 1000000
+await ex.create(197,'59999999999999998','2500000000000000',esh.address, 1000000)
+
+(await ex.getRate(197)).toString()
+
+(await ex.getBnbUsdPrice(197)).toString()
+(await ex.getInitPrice(197)).toString()
+
+(await ex.getEshToken(197)).toString()
+
+(await ex.compute(197,'1000000000000000000')).toString()
+6666000000000000000000
+6666000000000000000000
+
+(await ex.soldToken(197)).toString()
+
+(await ex.getRate(197)).toString()
+
+await ex.enter(1145,'1000000000000000000')
+
+await ex.create(197,'21999999999999999','2830000000000000',esh.address, 1000000)
+(await ex.getBnbUsdPrice(1)).toString()
+(await ex.getInitPrice(1)).toString()
+
+await ex.create(1,'21999999999999999','2830000000000000','0xc7316561f7BAeCE42072A40a3634b1636AE80F09', 1000000)
+
+automations
+
+esh price: 0.06
+bnb price: 0.002501
+
+
+//send 200000 esh to exchange contract
+esh.transfer(ex.address, '200000000000000000000000',{from:accounts[0]})
+exbal = await esh.balanceOf(ex.address)
+web3.utils.fromWei(exbal,'ether')
+200000
+//send 100000 rdao to user
+rdao.transfer('0xC0a60FD1bdcceD075871538f177696079295d6E6', '100000000000000000000000')
+
+t1 = await rdao.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+100000
+
+(await ex.getRate(1)).toString()
+(await ex.getRate(197)).toString()
+
+set 1 allowance
+await rdao.increaseAllowance(ex.address, '1000000000000000000', { from: accounts[1] })
+
+await rdao.increaseAllowance(ex.address, '1000000000000000000')
+
+(await ex.compute(197,'1000000000000000000',{from:accounts[1]})).toString()
+
+before exchange check sa available allowance first!
+echange 1 rdao to esh
+await ex.enter(197,'1000000000000000000',{from:accounts[1]})
+await ex.enter(197,'1000000000000000000')
+
+await rdao.increaseAllowance(ex.address, '500000000000000000', { from: accounts[1] })
+await ex.enter(1,'500000000000000000',{from:accounts[1]})
+
+
+
+await rdao.increaseAllowance(ex.address, '349999999999999978', { from: accounts[1] })
+await ex.enter(1,'349999999999999978',{from:accounts[1]})
+(await ex.getRate(1)).toString()
+(await ex.price(1)).toString()
+
+(await ex.lastAmount(1)).toString()
+(await ex.lastEx(1)).toString()
+
+t1 = await rdao.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+
+e1 = await esh.balanceOf(accounts[1])
+web3.utils.fromWei(e1,'ether')
+
+(await ex.getRate(1408)).toString()
+(await ex.getRate(794)).toString()
+(await ex.getRate(1145)).toString()
+
+(await ex.bnbUsdPrice(1145)).toString()
+
+
+(await ex.soldToken(1)).toString()
+
+
+exbal = await rdao.balanceOf(ex.address)
+web3.utils.fromWei(exbal,'ether')
+
+
+
+
+
+await exchange.enter(101,'2000000000000000000')
+71.4
+
+await exchange.enter(101,'2613058035714285854', { from: accounts[1] })
+
+
+t1 = await esh.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+3
+
+t1 = await rdao.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+197
+
+await exchange.getEshToken(101)
+(await exchange.getRate(101)).toString()
+
+total = await exchange.getRDAO(101)
+web3.utils.fromWei(total,'ether')
+
+set .5 rate so 1rdao = 2esh 
+await exchange.setRate(101,'500000000000000000')
+
+send 1 rdao
+await exchange.enter(101,'1000000000000000000',{from:accounts[1]})
+
+t1 = await esh.balanceOf(accounts[1])
+web3.utils.fromWei(t1,'ether')
+
+t1 = await rdao.balanceOf(exchange.address)
+web3.utils.fromWei(t1,'ether')
+
+total = await exchange.lastEx()
+web3.utils.fromWei(total,'ether')
+
+(await ex.getDomains()).toString()
+
+(await exchange.getA()).toString()
+(await exchange.getB()).toString()
+(await exchange.getRate(47)).toString()
