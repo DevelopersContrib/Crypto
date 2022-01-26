@@ -5,11 +5,9 @@ import "@openzeppelin/contracts/access/Roles.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Exchange is Ownable{
-	using Roles for Roles.Role;
+	
 	using SafeMath for uint256;
 	
-	Roles.Role private _creator;
-		
     ERC20 public rDAO;
 	uint256[] domainid;
 	address[] private list;
@@ -28,6 +26,7 @@ contract Exchange is Ownable{
 		uint256 ownerRdaoAmount;
 		uint256 totalWithdrawEsh;
 		uint256 totalWithdrawRdao;
+		address owner;
     }
 	
     mapping(uint256 => Swap) public exchange;
@@ -35,25 +34,23 @@ contract Exchange is Ownable{
     constructor(address _rdao) public {
         rDAO = ERC20(_rdao);
 		
-		_creator.add(msg.sender);
-		list.push(msg.sender);
     }
     
     function create(uint256 _id, uint256 _initPrice, uint256 _rdaoTotalPerUSD, address _eshToken, uint256 _base, uint256 _owner_rdao_amount) public {
-		require(_creator.has(msg.sender), "DOES_NOT_HAVE_CREATOR_ROLE");
 		require(_id>0, "INVALID_ID");
 		Swap storage _ex = exchange[_id];
 		
 		uint256 _price = (0 / _base) + _initPrice;		
 		uint256 _rate = calRate(_rdaoTotalPerUSD, _price);
 			
-		if(_ex.rate>0){
-			exchange[_id] = Swap(_initPrice, _rdaoTotalPerUSD, _price, 0, ERC20(_eshToken), 0, _rate, _base, _ex.ownerRdaoAmount, 0, 0);
+		if(_ex.rate>0){ //for reset
+			require(_ex.owner==msg.sender,"DOES_INVALID_OWNER");
+			exchange[_id] = Swap(_initPrice, _rdaoTotalPerUSD, _price, 0, ERC20(_eshToken), 0, _rate, _base, _ex.ownerRdaoAmount, 0, 0,msg.sender);
 		}else{			
 			require(rDAO.transferFrom(msg.sender, address(this), _owner_rdao_amount), "ERROR_TRANSFER_RDAO");			
 			domainid.push(_id);		
 			
-			exchange[_id] = Swap(_initPrice, _rdaoTotalPerUSD, _price, 0, ERC20(_eshToken), 0, _rate, _base, _owner_rdao_amount, 0, 0);
+			exchange[_id] = Swap(_initPrice, _rdaoTotalPerUSD, _price, 0, ERC20(_eshToken), 0, _rate, _base, _owner_rdao_amount, 0, 0,msg.sender);
 		}
     }
     
@@ -106,29 +103,6 @@ contract Exchange is Ownable{
 		_ex.rate = calRate(_ex.rdaoTotalPerUSD, _ex.price);
     }
 	
-	
-	/*function withdraw(uint256 _id, uint256 _amount) public {
-		Swap storage _ex = exchange[_id];
-		require(_id>0 && _ex.rate>0, "INVALID_ID_OR_RATE");
-		
-		require(_ex.soldToken >= _ex.totalWithdrawEsh.add(_amount), "SOLD_IS_LESS_THAN_WITHDRAW_AMOUNT");
-		
-		uint256 total = _amount * 10**18;
-		uint256 totalRdao = total.div(_ex.rate);
-		
-		require(_ex.eshToken.transferFrom(msg.sender, address(this), _amount), "ERROR_TRANSFER_ESH"); // send esh to contract		
-		require(rDAO.transfer(msg.sender, totalRdao), "ERROR_TRANSFER_RDAO"); // send rdao to user
-		
-		_ex.totalWithdrawRdao = _ex.totalWithdrawRdao.add(totalRdao);
-		
-		_ex.totalWithdrawEsh = _ex.totalWithdrawEsh.add(_amount);
-
-		uint256 bal = _ex.soldToken.sub(_ex.totalWithdrawEsh);
-		
-		_ex.price = (bal / _ex.base) + _ex.initPrice;
-		_ex.rate = calRate(_ex.rdaoTotalPerUSD, _ex.price);	
-	}*/
-	
 	function withdraw(uint256 _id, uint256 _amount) public {
 		Swap storage _ex = exchange[_id];
 		require(_id>0 && _ex.rate>0, "INVALID_ID_OR_RATE");
@@ -180,23 +154,6 @@ contract Exchange is Ownable{
 	function getRate(uint256 _id) public view returns(uint256) {
         Swap storage _ex = exchange[_id];
         return _ex.rate;
-    }
-	
-	function getList()public view returns( address  [] memory){
-		return list;
-	}
-	
-	function addCreator(address creator) public onlyOwner {
-		_creator.add(creator);
-		list.push(creator);
-	}
-	
-	function removeCreator(address creator) public onlyOwner {
-		_creator.remove(creator);
-	}
-	
-	function isCreator(address creator) public view returns(bool) {
-        return _creator.has(creator);
     }
 	
 	function transferFund(uint256 amount, address token, address to) public onlyOwner {
