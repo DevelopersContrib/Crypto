@@ -1,0 +1,20 @@
+voting = await Voting.deployed()
+
+(await voting.getDomains()).toString()
+voting.castVote(1,true)
+
+(await voting.voted(1,accounts[0])).toString()
+
+(await voting.getVote(1,accounts[0])).toString()
+voting.castVote(1,0)
+
+(await voting.getVoteCount(1)).toString()
+
+voting.castVote(1,false,{from:accounts[1]})
+(await voting.getVote(1,accounts[1])).toString()
+
+
+(await voting.voted(1,accounts[1])).toString()
+
+
+(await voting.getVoters(1)).toString()
