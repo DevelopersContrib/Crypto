@@ -74,29 +74,8 @@ contract Exchange is Ownable{
 			exchange[_id] = Swap(_initPrice, _price, 0, ERC20(_eshToken), 0, _base, _owner_rdao_amount, 0, 0);
 		}
     }
-    
-    function enter(uint256 _id, uint256 _amount, address _recipient) public {
-        Swap storage _ex = exchange[_id];
-		require(_id>0 && _ex.price>0, "INVALID_ID_OR_PRICE");
-		require(_recipient == address(_recipient),"INVALID_RECIPIENT");
-		
-        require(rDAO.transferFrom(msg.sender, address(this), _amount), "ERROR_TRANSFER_RDAO");
-		_ex.totalRdaoEnter = _ex.totalRdaoEnter.add(_amount);
-		
-		uint256 _lastAmount = _amount;
-		
-		uint256 _lastEx = _lastAmount.mul(tokenCrowdSale.price()) / _ex.price;
-		
-		_ex.eshToken.transfer(_recipient, _lastEx);
-		
-		_ex.soldToken = _ex.soldToken.add(_lastEx);
-		
-		uint256 bal = _ex.soldToken - _ex.totalWithdrawEsh;
-		
-		_ex.price = (bal / _ex.base) + _ex.initPrice;
-    }
-	
-	function buy(uint256 _id, uint256 _amount, address _recipient) public {
+    	
+	function enter(uint256 _id, uint256 _amount, address _recipient) public {
         Swap storage _ex = exchange[_id];
 		
 		if(_ex.price==0){
@@ -240,11 +219,7 @@ contract Exchange is Ownable{
 	
 	function getEshToken(uint256 _id) public view returns(ERC20) {
 		Swap storage _ex = exchange[_id];
-		if(_ex.price>0){
-			return _ex.eshToken;
-		}else{
-			dan.getEshToken(_id);
-		}
+		return _ex.eshToken;
 	}
 	
 	function getInitPrice(uint256 _id) public view returns (uint256) {
@@ -252,7 +227,7 @@ contract Exchange is Ownable{
 		if(_ex.price>0){
 			return _ex.initPrice;
 		}else{
-			dan.getInitPrice(_id);
+			return dan.getInitPrice(_id);
 		}
 	}
 	
@@ -261,7 +236,7 @@ contract Exchange is Ownable{
 		if(_ex.price>0){
 			return _ex.price;
 		}else{
-			dan.price(_id);
+			return dan.price(_id);
 		}
 	}
 	
