@@ -81,7 +81,7 @@ contract Exchange is Ownable{
 		if(_ex.price==0){
 			if(dan.price(_id)>0){
 				domainid.push(_id);
-				exchange[_id] = Swap(dan.getInitPrice(_id), dan.price(_id), 0, ERC20(dan.getEshToken(_id)), 0, 1000000, 
+				exchange[_id] = Swap(dan.getInitPrice(_id), dan.price(_id), dan.soldToken(_id), ERC20(dan.getEshToken(_id)), dan.getTotalRdaoEnter(_id), 1000000, 
 					dan.getOwnerRDAOAmount(_id), dan.getTotalWithdrawEsh(_id), dan.getTotalWithdrawRdao(_id));
 				_ex = exchange[_id];
 			}
@@ -188,33 +188,31 @@ contract Exchange is Ownable{
     }
 	
 	function soldToken(uint256 _id) public view returns (uint256) {
-		uint256 total = dan.soldToken(_id);
+		// uint256 total = dan.soldToken(_id);
+		// Swap storage _ex = exchange[_id];
+		// return total + _ex.soldToken;
 		Swap storage _ex = exchange[_id];
-		return total + _ex.soldToken;
+		return _ex.soldToken;
 	}
 	
 	function getTotalWithdrawEsh(uint256 _id) public view returns (uint256) {
-		uint256 total = dan.getTotalWithdrawEsh(_id);
 		Swap storage _ex = exchange[_id];
-		return total + _ex.totalWithdrawEsh;
+		return _ex.totalWithdrawEsh;
 	}
 	
 	function getTotalWithdrawRdao(uint256 _id) public view returns (uint256) {
-		uint256 total = dan.getTotalWithdrawRdao(_id);
 		Swap storage _ex = exchange[_id];
 		return _ex.totalWithdrawRdao;
 	}
 	
 	function getTotalRdaoEnter(uint256 _id) public view returns(uint256) {
-		uint256 total = dan.getTotalRdaoEnter(_id);
-        Swap storage _ex = exchange[_id];
-        return total + _ex.totalRdaoEnter;
+		Swap storage _ex = exchange[_id];
+        return _ex.totalRdaoEnter;
     }
 	
 	function getOwnerRDAOAmount(uint256 _id) public view returns(uint256) {
-		uint256 total = dan.getOwnerRDAOAmount(_id);
-        Swap storage _ex = exchange[_id];
-        return total + _ex.ownerRdaoAmount;
+		Swap storage _ex = exchange[_id];
+        return _ex.ownerRdaoAmount;
     }
 	
 	function getEshToken(uint256 _id) public view returns(ERC20) {
