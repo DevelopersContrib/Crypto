@@ -106,6 +106,30 @@ contract Exchange is Ownable{
 		_ex.price = (bal / _ex.base) + _ex.initPrice;
     }
 	
+	function compute(uint256 _id, uint256 _amount) public view returns (uint256) {
+        Swap storage _ex = exchange[_id];
+		
+		uint256 _lastAmount = _amount;
+		
+		uint256 _lastEx = _lastAmount.mul(tokenCrowdSale.price()) / _ex.price;
+		return _lastEx;
+    }
+	
+	function computerdao(uint256 _id, uint256 _amount, uint256 _deci) public view returns (uint256) {
+        Swap storage _ex = exchange[_id];
+		
+		uint256 _lastAmount = _amount;
+		uint256 _lastEx;
+		
+		if(_ex.price > 0){ // is push
+			_lastEx = _lastAmount.mul(_ex.price) / tokenCrowdSale.price();
+		}else{
+			_lastEx = _lastAmount.mul(dan.price(_id)) / tokenCrowdSale.price();
+		}
+		
+		return _lastEx + _deci;
+    }
+	
 	function withdraw(uint256 _id, uint256 _amount) public {
 		Swap storage _ex = exchange[_id];
 		require(_id>0 && _ex.price>0, "INVALID_ID_OR_PRICE");
@@ -188,9 +212,6 @@ contract Exchange is Ownable{
     }
 	
 	function soldToken(uint256 _id) public view returns (uint256) {
-		// uint256 total = dan.soldToken(_id);
-		// Swap storage _ex = exchange[_id];
-		// return total + _ex.soldToken;
 		Swap storage _ex = exchange[_id];
 		return _ex.soldToken;
 	}
@@ -220,6 +241,11 @@ contract Exchange is Ownable{
 		return _ex.eshToken;
 	}
 	
+	function isPush(uint256 _id) public view returns (bool) {
+		Swap storage _ex = exchange[_id];
+		return _ex.price > 0;
+	}
+	
 	function getInitPrice(uint256 _id) public view returns (uint256) {
 		Swap storage _ex = exchange[_id];
 		if(_ex.price>0){
@@ -236,6 +262,11 @@ contract Exchange is Ownable{
 		}else{
 			return dan.price(_id);
 		}
+	}
+	
+	function getprice(uint256 _id) public view returns (uint256) {
+		Swap storage _ex = exchange[_id];
+		return _ex.price;
 	}
 	
 	function getDomains() public view returns(uint256[] memory) {
